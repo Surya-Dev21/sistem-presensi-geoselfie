@@ -10,8 +10,8 @@ use App\Http\Controllers\ProfilController;
 
 // 1. Halaman Utama (Bisa diakses siapa saja)
 Route::get('/', function () {
-    return Inertia::render('Welcome');
-})->name('welcome');
+    return Inertia::render('Auth/Login');
+})->name('Auth/Login');
 
 // =============================================================
 // 2. AREA TAMU (GUEST) - Hanya untuk yang BELUM LOGIN
@@ -19,16 +19,16 @@ Route::get('/', function () {
 
 // Rute Login Pegawai / Guru
 Route::middleware(['guest:pegawai'])->group(function () {
-    Route::get('/login', [AuthController::class, 'showLoginPegawai'])->name('login');
-    Route::post('/login', [AuthController::class, 'loginPegawai']);
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
     Route::get('/lupa-password', [AuthController::class, 'showLupaPassword'])->name('password.request');
     Route::post('/lupa-password', [AuthController::class, 'kirimLinkReset'])->name('password.email');
 });
 
 // Rute Login Admin
 Route::middleware(['guest:admin'])->prefix('admin')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLoginAdmin'])->name('admin.login');
-    Route::post('/login', [AuthController::class, 'loginAdmin']);
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('admin.login');
+    Route::post('/login', [AuthController::class, 'login']);
 });
 
 // =============================================================

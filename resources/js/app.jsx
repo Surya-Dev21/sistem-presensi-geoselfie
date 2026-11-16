@@ -1,6 +1,6 @@
 import "../css/app.css";
 
-import { createRoot, hydrateRoot } from "react-dom/client";
+import { hydrateRoot } from "react-dom/client";
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
 
@@ -14,14 +14,14 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) =>
         resolvePageComponent(
-            `./Pages/${name}.jsx`,
-            import.meta.glob("./Pages/**/*.jsx"),
+            `./pages/${name}.jsx`,
+            import.meta.glob("./pages/**/*.jsx"),
         ),
     setup({ el, App, props }) {
         if (import.meta.env.SSR) {
             return <App {...props} />;
         }
-        createRoot(el).render(<App {...props} />);
+        hydrateRoot(el, <App {...props} />);
     },
     progress: {
         color: "#4b5563",
