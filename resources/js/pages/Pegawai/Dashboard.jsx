@@ -111,9 +111,8 @@ export default function Dashboard({
 
                             <div>
                                 <span className="font-extrabold text-lg text-slate-800 tracking-tight block leading-none">
-                                    SIMAGGGG
+                                    SIMAG
                                 </span>
-                                <div style={{ color: "red", fontSize: "24px" }}> TES-SIMAG-98765</div>
                                 <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">
                                     SMK Pembangunan Bandung Barat
                                 </span>
