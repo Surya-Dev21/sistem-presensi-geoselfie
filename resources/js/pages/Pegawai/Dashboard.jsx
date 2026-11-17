@@ -14,10 +14,13 @@ import {
 } from "react-icons/fi";
 import GuruLayout from "@/components/guru-layout";
 
-// ===== Helper =====
-function sapaanGuru(nama, jk = "L") {
+function sapaanGuru(nama, jk) {
     if (!nama) return "Bapak/Ibu Guru";
-    return `${jk === "P" ? "Ibu" : "Bapak"} ${nama}`;
+    if (jk === "P") return `Ibu ${nama}`;
+    if (jk === "L" && !/(?:ibu|bu |nia|leni|wati|fitri|tri)/i.test(nama)) return `Bapak ${nama}`;
+    const isPerempuan = /(?:ibu|bu |nia|leni|wati|fitri|tri|siti|ayu|nur|dewi|rahma|putri|mega)/i.test(nama)
+        || /(?:a|i|ni|wi|tri|ty|tya|na|ma|lia|fia|zia|syah)$/i.test(nama.trim());
+    return `${isPerempuan ? "Ibu" : "Bapak"} ${nama}`;
 }
 
 export default function Dashboard({
@@ -29,8 +32,7 @@ export default function Dashboard({
 
     const user = auth?.user || { nama: "Guru / Pegawai", nip: "-", jabatan: "Guru", jenis_kelamin: "L" };
     const namaGuru = user.nama || user.name || "Guru";
-    const jk = user.jenis_kelamin || "L";
-    const sapaan = sapaanGuru(namaGuru, jk);
+    const sapaan = sapaanGuru(namaGuru, user.jenis_kelamin);
 
     // Jam real-time (hanya di client)
     const [waktu, setWaktu] = useState(null);
@@ -75,35 +77,31 @@ export default function Dashboard({
         ? "Sudah Presensi Masuk"
         : "Presensi Selesai";
 
-    // Quick actions
+    // Quick actions (palet putih & biru)
     const quickActions = [
         {
             href: "/absensi",
             icon: FiCamera,
             label: "Presensi Harian",
             desc: "Lakukan geoselfie masuk/pulang.",
-            cta: "Buka Kamera",
         },
         {
             href: "/kalender",
             icon: FiCalendar,
             label: "Riwayat Presensi",
-            desc: "Lihat rekapan kalender kehadiran.",
-            cta: "Buka Kalender",
+            desc: "Lihat rekapan kehadiran.",
         },
         {
             href: "/izin",
             icon: FiFileText,
             label: "Pengajuan Izin",
-            desc: "Form permohonan izin atau sakit.",
-            cta: "Ajukan Izin",
+            desc: "Form permohonan izin/cuti.",
         },
         {
             href: "/profil",
             icon: FiUser,
             label: "Profil Akun",
             desc: "Kelola email & ganti password.",
-            cta: "Edit Profil",
         },
     ];
 
@@ -111,136 +109,132 @@ export default function Dashboard({
         <GuruLayout title="Dashboard Guru">
             <Head title="Dashboard Guru - Portal SIMAG" />
 
-            <div className="space-y-4">
-                {/* ===== HERO BANNER DENGAN BIRU & KUNING SMK PBB ===== */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 text-white p-5 sm:p-6 shadow-lg shadow-blue-900/10 border-b-4 border-amber-400">
-                    <div className="relative z-10 max-w-2xl space-y-1.5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/15 text-blue-100">
+            <div className="space-y-3.5">
+                {/* ===== HERO BANNER: Biru tua elegan + Aksen Putih (Bebas Kuning) ===== */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white p-4.5 sm:p-5 shadow-sm border border-blue-800">
+                    <div className="relative z-10 max-w-2xl space-y-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/15 text-blue-100">
                             Sistem Informasi Manajemen Guru
                         </span>
-                        <h2 className="text-lg sm:text-xl font-black tracking-tight text-white leading-tight">
+                        <h2 className="text-base sm:text-lg font-black tracking-tight text-white leading-tight">
                             Selamat Datang, {sapaan}!
                         </h2>
-                        <p className="text-xs text-blue-100 leading-relaxed max-w-lg">
+                        <p className="text-[11px] text-blue-100 leading-relaxed max-w-lg">
                             Pastikan presensi geoselfie dilakukan tepat waktu sesuai jadwal mengajar hari ini.
                         </p>
                     </div>
-                    {/* Decorative */}
+                    {/* Decorative glow putih transparan */}
                     <div className="absolute -bottom-6 -right-6 w-36 h-36 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-                    <div className="absolute top-2 right-8 w-16 h-16 rounded-full bg-amber-400/20 blur-xl pointer-events-none" />
                 </div>
 
                 {/* ===== GRID UTAMA ===== */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
                     {/* KOLOM KIRI: Jam & Status */}
-                    <div className="lg:col-span-1 space-y-4">
-                        {/* Kartu Jam (Biru SMK) */}
-                        <div className="rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 text-white p-5 shadow-md">
-                            <p className="text-[10px] font-semibold text-blue-200 uppercase tracking-wider mb-1">
-                                Waktu Sekarang
+                    <div className="lg:col-span-1 space-y-3">
+                        {/* Kartu Jam (Biru Tua + Teks Putih) */}
+                        <div className="rounded-2xl bg-blue-900 text-white p-4 shadow-xs">
+                            <p className="text-[9px] font-semibold text-blue-200 uppercase tracking-wider mb-1">
+                                Waktu Sekarang (WIB)
                             </p>
-                            <p className="text-3xl font-black tracking-tight tabular-nums leading-none">
+                            <p className="text-2xl sm:text-3xl font-black tracking-tight tabular-nums leading-none">
                                 {formatJam}
                             </p>
-                            <p className="text-xs text-blue-200 mt-1.5 capitalize">{formatTanggal}</p>
+                            <p className="text-[11px] text-blue-100 mt-1 capitalize">{formatTanggal}</p>
                         </div>
 
                         {/* Acuan Masuk */}
-                        <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-xs">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                        <div className="rounded-2xl bg-white border border-slate-200 p-3.5 shadow-xs">
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                                 Acuan Jam Masuk Hari Ini
                             </p>
                             <div className="flex items-center gap-2">
-                                <FiClock className="h-5 w-5 text-blue-700 flex-shrink-0" />
-                                <p className="text-xl font-black text-blue-700 tabular-nums">
+                                <FiClock className="h-4 w-4 text-blue-800 flex-shrink-0" />
+                                <p className="text-lg font-black text-blue-900 tabular-nums">
                                     {jamAcuanMasuk ?? "--:--"}
                                 </p>
                             </div>
                             <p className="text-[10px] text-slate-500 mt-1">
                                 {jamAcuanMasuk
-                                    ? "Berdasarkan jadwal mengajar pertama hari ini."
-                                    : "Tidak ada jadwal mengajar hari ini."}
+                                    ? "Berdasarkan sesi pertama jadwal hari ini."
+                                    : "Tidak ada jadwal mengajar terdaftar hari ini."}
                             </p>
                         </div>
 
-                        {/* Status Absen */}
+                        {/* Status Presensi: Putih & Biru (Bebas Kuning/Amber) */}
                         <div
-                            className={`rounded-2xl border p-4 shadow-xs ${
+                            className={`rounded-2xl border p-3.5 shadow-xs ${
                                 belumMasuk
                                     ? "bg-white border-slate-200"
                                     : sudahMasuk
-                                    ? "bg-amber-50 border-amber-200"
-                                    : "bg-emerald-50 border-emerald-200"
+                                    ? "bg-blue-50 border-blue-200"
+                                    : "bg-slate-50 border-blue-200"
                             }`}
                         >
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                                 Status Presensi
                             </p>
                             <div className="flex items-center gap-2">
                                 {belumMasuk ? (
-                                    <FiAlertCircle className="h-5 w-5 text-slate-400 flex-shrink-0" />
-                                ) : sudahMasuk ? (
-                                    <FiCheckCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
+                                    <FiAlertCircle className="h-4 w-4 text-slate-400 flex-shrink-0" />
                                 ) : (
-                                    <FiCheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                                    <FiCheckCircle className="h-4 w-4 text-blue-700 flex-shrink-0" />
                                 )}
                                 <span
-                                    className={`text-sm font-bold ${
-                                        belumMasuk
-                                            ? "text-slate-600"
-                                            : sudahMasuk
-                                            ? "text-amber-700"
-                                            : "text-emerald-700"
+                                    className={`text-xs font-bold ${
+                                        belumMasuk ? "text-slate-600" : "text-blue-900"
                                     }`}
                                 >
                                     {statusTeks}
                                 </span>
                             </div>
+
                             {adaMasuk && (
-                                <div className="mt-3 space-y-1.5">
-                                    <div className="flex justify-between text-xs">
+                                <div className="mt-2.5 pt-2 border-t border-slate-200/60 space-y-1">
+                                    <div className="flex justify-between text-[11px]">
                                         <span className="text-slate-500">Masuk</span>
-                                        <span className="font-bold text-slate-800">{waktuMasuk}</span>
+                                        <span className="font-bold text-blue-900">{waktuMasuk}</span>
                                     </div>
                                     {adaPulang && (
-                                        <div className="flex justify-between text-xs">
+                                        <div className="flex justify-between text-[11px]">
                                             <span className="text-slate-500">Pulang</span>
-                                            <span className="font-bold text-slate-800">{waktuPulang}</span>
+                                            <span className="font-bold text-blue-900">{waktuPulang}</span>
                                         </div>
                                     )}
                                 </div>
                             )}
 
-                            {/* CTA Presensi (Warna Biru Utama) */}
+                            {/* Tombol CTA Presensi */}
                             {!sudahSelesai && (
                                 <Link
                                     href="/absensi"
-                                    className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-bold bg-blue-700 text-white hover:bg-blue-800 transition-colors shadow-xs"
+                                    className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-bold bg-blue-800 text-white hover:bg-blue-900 transition-colors shadow-xs"
                                 >
                                     <FiCamera className="h-3.5 w-3.5" />
-                                    {belumMasuk ? "Presensi Masuk" : "Presensi Pulang"}
+                                    <span>{belumMasuk ? "Presensi Masuk" : "Presensi Pulang"}</span>
                                 </Link>
                             )}
                         </div>
                     </div>
 
                     {/* KOLOM KANAN: Jadwal + Quick Actions */}
-                    <div className="lg:col-span-2 space-y-4">
+                    <div className="lg:col-span-2 space-y-3">
                         {/* Jadwal Hari Ini */}
-                        <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-xs">
-                            <div className="flex items-center gap-2 mb-3">
-                                <FiBookOpen className="h-4 w-4 text-blue-700" />
-                                <h3 className="text-sm font-bold text-slate-800">Jadwal Mengajar Hari Ini</h3>
+                        <div className="rounded-2xl bg-white border border-slate-200 p-3.5 shadow-xs">
+                            <div className="flex items-center gap-2 mb-2.5">
+                                <FiBookOpen className="h-4 w-4 text-blue-800" />
+                                <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+                                    Jadwal Mengajar Hari Ini
+                                </h3>
                             </div>
 
                             {jadwalHariIni.length > 0 ? (
-                                <div className="space-y-2">
+                                <div className="space-y-1.5">
                                     {jadwalHariIni.map((jadwal, i) => (
                                         <div
                                             key={i}
-                                            className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+                                            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-blue-50/60 transition-colors"
                                         >
-                                            <div className="w-1.5 h-10 rounded-full bg-blue-700 flex-shrink-0" />
+                                            <div className="w-1.5 h-8 rounded-full bg-blue-800 flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-xs font-bold text-slate-800 truncate">
                                                     {jadwal.mata_pelajaran}
@@ -250,10 +244,10 @@ export default function Dashboard({
                                                 </p>
                                             </div>
                                             <div className="text-right flex-shrink-0">
-                                                <p className="text-xs font-bold text-blue-700 tabular-nums">
+                                                <p className="text-xs font-bold text-blue-900 tabular-nums">
                                                     {jadwal.jam_mulai}
                                                 </p>
-                                                <p className="text-[10px] text-slate-400 tabular-nums">
+                                                <p className="text-[9px] text-slate-400 tabular-nums">
                                                     s.d. {jadwal.jam_selesai}
                                                 </p>
                                             </div>
@@ -261,44 +255,40 @@ export default function Dashboard({
                                     ))}
                                 </div>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-6 text-center">
-                                    <FiXCircle className="h-8 w-8 text-slate-300 mb-2" />
+                                <div className="flex flex-col items-center justify-center py-5 text-center">
+                                    <FiXCircle className="h-7 w-7 text-slate-300 mb-1.5" />
                                     <p className="text-xs font-semibold text-slate-500">
                                         Tidak ada jadwal mengajar hari ini
                                     </p>
                                     <p className="text-[10px] text-slate-400 mt-0.5">
-                                        Selamat menikmati hari libur!
+                                        Selamat beristirahat atau persiapan mengajar berikutnya!
                                     </p>
                                 </div>
                             )}
                         </div>
 
-                        {/* Quick Actions */}
+                        {/* Akses Cepat */}
                         <div>
-                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5 px-0.5">
+                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-0.5">
                                 Akses Cepat
                             </h3>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                                 {quickActions.map((item) => (
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className="group bg-white border border-slate-200 p-3.5 rounded-2xl hover:border-blue-400 hover:shadow-md transition-all flex flex-col gap-2"
+                                        className="group bg-white border border-slate-200 p-3 rounded-2xl hover:border-blue-400 hover:shadow-sm transition-all flex flex-col gap-1.5"
                                     >
-                                        <div className="w-8 h-8 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center group-hover:bg-blue-700 group-hover:text-white transition-colors">
-                                            <item.icon className="h-4 w-4" />
+                                        <div className="w-7 h-7 bg-blue-50 text-blue-800 rounded-xl flex items-center justify-center group-hover:bg-blue-800 group-hover:text-white transition-colors">
+                                            <item.icon className="h-3.5 w-3.5" />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-800 leading-tight">
+                                            <p className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-800 transition-colors">
                                                 {item.label}
                                             </p>
-                                            <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">
+                                            <p className="text-[10px] text-slate-400 line-clamp-1 leading-tight mt-0.5">
                                                 {item.desc}
                                             </p>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-700 group-hover:translate-x-0.5 transition-transform mt-auto">
-                                            <span>{item.cta}</span>
-                                            <FiArrowRight className="h-3 w-3" />
                                         </div>
                                     </Link>
                                 ))}

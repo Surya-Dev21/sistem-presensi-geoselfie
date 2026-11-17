@@ -1,4 +1,3 @@
-import React from "react";
 import { Link } from "@inertiajs/react";
 import { FiClock } from "react-icons/fi";
 import { usePage } from "@inertiajs/react";
