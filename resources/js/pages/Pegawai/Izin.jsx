@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Head, useForm, Link } from '@inertiajs/react';
-import { FiArrowLeft, FiFileText, FiSend, FiClock, FiUploadCloud, FiLoader } from 'react-icons/fi';
+import { Head, useForm } from '@inertiajs/react';
+import { FiFileText, FiSend, FiClock, FiUploadCloud, FiCalendar } from 'react-icons/fi';
+import GuruLayout from '@/components/guru-layout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-export default function Izin({ riwayatIzin }) {
+export default function Izin({ riwayatIzin = [] }) {
     const [namaFile, setNamaFile] = useState('');
 
     const { data, setData, post, processing, errors } = useForm({
@@ -27,146 +30,165 @@ export default function Izin({ riwayatIzin }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-12 font-sans">
-            <Head title="Pengajuan Izin" />
+        <GuruLayout title="Pengajuan Izin">
+            <Head title="Pengajuan Izin - Portal SIMAG" />
 
-            <div className="bg-white shadow-sm px-6 py-4 flex justify-between items-center mb-6 border-b border-gray-200">
-                <h1 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <FiFileText className="text-amber-500" /> Pengajuan Izin
-                </h1>
-                <Link href="/dashboard" className="flex items-center gap-2 text-blue-600 font-semibold hover:underline text-sm">
-                    <FiArrowLeft /> Kembali ke Dashboard
-                </Link>
-            </div>
-
-            <div className="max-w-5xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* FORM PENGAJUAN */}
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6">
-                    <h2 className="font-bold text-gray-800 text-sm mb-4">Isi Permohonan Izin / Cuti</h2>
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Jenis Permohonan</label>
-                            <select
-                                value={data.jenis_izin}
-                                onChange={e => setData('jenis_izin', e.target.value)}
-                                className="w-full rounded-xl border-2 border-gray-300 focus:border-blue-600 focus:ring-0 text-sm font-medium py-2.5 px-3 bg-white"
-                            >
-                                <option value="Izin">Izin Keperluan Halangan</option>
-                                <option value="Sakit">Sakit</option>
-                                <option value="Cuti">Cuti Tahunan</option>
-                            </select>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Mulai Tanggal</label>
-                                <input
-                                    type="date"
-                                    value={data.tgl_mulai}
-                                    onChange={e => setData('tgl_mulai', e.target.value)}
-                                    className="w-full rounded-xl border-2 border-gray-300 focus:border-blue-600 focus:ring-0 text-sm font-medium py-2 px-3 bg-white"
-                                />
-                                {errors.tgl_mulai && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.tgl_mulai}</p>}
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Sampai Tanggal</label>
-                                <input
-                                    type="date"
-                                    value={data.tgl_selesai}
-                                    onChange={e => setData('tgl_selesai', e.target.value)}
-                                    className="w-full rounded-xl border-2 border-gray-300 focus:border-blue-600 focus:ring-0 text-sm font-medium py-2 px-3 bg-white"
-                                />
-                                {errors.tgl_selesai && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.tgl_selesai}</p>}
-                            </div>
-                        </div>
-
-                        {/* TEXTAREA ALASAN DENGAN BORDER TEGAS */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Alasan Permohonan</label>
-                            <textarea
-                                name="alasan"
-                                rows={5}
-                                value={data.alasan}
-                                onChange={e => setData('alasan', e.target.value)}
-                                placeholder="Jelaskan secara rinci alasan permohonan Anda..."
-                                className="w-full rounded-xl border-2 border-gray-300 focus:border-blue-600 focus:ring-0 text-sm p-3.5 font-medium leading-relaxed resize-none bg-white"
-                            ></textarea>
-                            {errors.alasan && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.alasan}</p>}
-                        </div>
-
-                        {/* UPLOAD DOKUMEN */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Dokumen Pendukung (Lampiran)</label>
-                            <div className="border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-4 text-center transition bg-slate-50 relative cursor-pointer">
-                                <input
-                                    type="file"
-                                    onChange={handleFileChange}
-                                    accept=".pdf,.png,.jpg,.jpeg"
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                <FiUploadCloud className="w-8 h-8 text-blue-500 mx-auto mb-1" />
-                                <p className="text-xs font-bold text-gray-700">
-                                    {namaFile ? namaFile : 'Pilih file atau seret ke sini'}
-                                </p>
-                                <p className="text-[10px] text-gray-500 mt-0.5">Format pendukung: PDF, JPG, PNG (Maks. 2MB)</p>
-                            </div>
-                            {errors.dokumen && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.dokumen}</p>}
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-xl shadow-md transition flex justify-center items-center gap-2 active:scale-98 disabled:bg-gray-300"
-                        >
-                            {processing ? (
-                                <><FiLoader className="animate-spin w-4 h-4" /> Mengirimkan Data...</>
-                            ) : (
-                                <><FiSend /> Kirim Permohonan Izin</>
-                            )}
-                        </button>
-                    </form>
-                </div>
-
-                {/* RIWAYAT PENGAJUAN */}
-                <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6">
-                    <h2 className="font-bold text-gray-800 text-sm mb-4 flex items-center gap-2">
-                        <FiClock className="text-blue-600" /> Riwayat Permohonan Saya
+            <div className="space-y-6">
+                <div>
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                        Permohonan Izin & Cuti
                     </h2>
-
-                    <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
-                        {riwayatIzin && riwayatIzin.length > 0 ? (
-                            riwayatIzin.map((item) => (
-                                <div key={item.id} className="p-4 rounded-2xl border border-gray-200 bg-slate-50 flex justify-between items-start">
-                                    <div>
-                                        <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                                            {item.jenis_izin}
-                                        </span>
-                                        <p className="text-xs font-bold text-gray-800 mt-2">
-                                            {item.tgl_mulai} s/d {item.tgl_selesai}
-                                        </p>
-                                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.alasan}</p>
-                                    </div>
-                                    <span className={`text-xs px-3 py-1 rounded-full font-black border ${
-                                        item.status === 'Disetujui' ? 'bg-emerald-100 border-emerald-300 text-emerald-800' :
-                                        item.status === 'Ditolak' ? 'bg-rose-100 border-rose-300 text-rose-800' : 'bg-amber-100 border-amber-300 text-amber-800'
-                                    }`}>
-                                        {item.status}
-                                    </span>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="text-center py-12">
-                                <FiFileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                                <p className="text-xs text-gray-400">Belum ada riwayat pengajuan izin.</p>
-                            </div>
-                        )}
-                    </div>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Kirimkan permohonan izin tidak masuk atau cuti kerja beserta dokumen pendukung.
+                    </p>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* FORM PENGAJUAN */}
+                    <Card className="rounded-3xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+                        <CardHeader className="p-6 pb-2">
+                            <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <FiFileText className="text-amber-500" />
+                                Formulir Permohonan Izin
+                            </CardTitle>
+                        </CardHeader>
+
+                        <CardContent className="p-6 pt-2">
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                                        Jenis Permohonan
+                                    </label>
+                                    <select
+                                        value={data.jenis_izin}
+                                        onChange={e => setData('jenis_izin', e.target.value)}
+                                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:ring-0 text-sm font-semibold py-2.5 px-3.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition"
+                                    >
+                                        <option value="Izin">Izin (Urusan Mendesak)</option>
+                                        <option value="Sakit">Sakit</option>
+                                        <option value="Cuti">Cuti Tahunan / Melahirkan</option>
+                                    </select>
+                                    {errors.jenis_izin && <p className="text-xs text-rose-500 mt-1">{errors.jenis_izin}</p>}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                                            Tanggal Mulai
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={data.tgl_mulai}
+                                            onChange={e => setData('tgl_mulai', e.target.value)}
+                                            required
+                                            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:ring-0 text-sm font-medium py-2.5 px-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition"
+                                        />
+                                        {errors.tgl_mulai && <p className="text-xs text-rose-500 mt-1">{errors.tgl_mulai}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                                            Tanggal Selesai
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={data.tgl_selesai}
+                                            onChange={e => setData('tgl_selesai', e.target.value)}
+                                            required
+                                            className="w-full rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:ring-0 text-sm font-medium py-2.5 px-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition"
+                                        />
+                                        {errors.tgl_selesai && <p className="text-xs text-rose-500 mt-1">{errors.tgl_selesai}</p>}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                                        Keterangan / Alasan
+                                    </label>
+                                    <textarea
+                                        rows="3"
+                                        value={data.alasan}
+                                        onChange={e => setData('alasan', e.target.value)}
+                                        placeholder="Jelaskan alasan izin Anda secara singkat dan jelas..."
+                                        required
+                                        className="w-full rounded-xl border border-slate-300 dark:border-slate-700 focus:border-blue-600 focus:ring-0 text-sm font-medium p-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 transition"
+                                    ></textarea>
+                                    {errors.alasan && <p className="text-xs text-rose-500 mt-1">{errors.alasan}</p>}
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                                        Bukti Dokumen / Surat Dokter (Opsional)
+                                    </label>
+                                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                                        <FiUploadCloud className="text-slate-400 text-2xl mb-1" />
+                                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium text-center">
+                                            {namaFile || "Pilih foto surat atau berkas PDF (Maks. 2MB)"}
+                                        </span>
+                                        <input
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            onChange={handleFileChange}
+                                            className="hidden"
+                                        />
+                                    </label>
+                                    {errors.dokumen && <p className="text-xs text-rose-500 mt-1">{errors.dokumen}</p>}
+                                </div>
+
+                                <Button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="w-full py-3 h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md shadow-blue-600/20 transition flex justify-center items-center gap-2 active:scale-98 disabled:opacity-60"
+                                >
+                                    <FiSend className="h-4 w-4" />
+                                    <span>Kirim Permohonan Izin</span>
+                                </Button>
+                            </form>
+                        </CardContent>
+                    </Card>
+
+                    {/* RIWAYAT PENGAJUAN */}
+                    <Card className="rounded-3xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col">
+                        <CardHeader className="p-6 pb-2">
+                            <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <FiClock className="text-blue-600 dark:text-blue-400" />
+                                Riwayat Permohonan Terakhir
+                            </CardTitle>
+                        </CardHeader>
+
+                        <CardContent className="p-6 pt-2 flex-1">
+                            {riwayatIzin && riwayatIzin.length > 0 ? (
+                                <div className="space-y-3">
+                                    {riwayatIzin.map((item, index) => (
+                                        <div key={index} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-bold text-sm text-slate-800 dark:text-slate-100">{item.jenis_izin}</span>
+                                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                                    item.status === 'Disetujui' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' :
+                                                    item.status === 'Ditolak' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' :
+                                                    'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                                                }`}>
+                                                    {item.status}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium">
+                                                <FiCalendar className="text-slate-400" /> {item.tgl_mulai} s/d {item.tgl_selesai}
+                                            </p>
+                                            <p className="text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
+                                                "{item.alasan}"
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center py-12 text-center text-slate-400 dark:text-slate-500 space-y-2">
+                                    <FiFileText className="w-10 h-10 text-slate-300 dark:text-slate-600" />
+                                    <p className="text-xs">Belum ada riwayat permohonan izin yang diajukan.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-        </div>
+        </GuruLayout>
     );
 }

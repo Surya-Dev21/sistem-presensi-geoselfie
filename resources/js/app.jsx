@@ -3,6 +3,7 @@ import "../css/app.css";
 import { hydrateRoot } from "react-dom/client";
 import { createInertiaApp } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
+import { ThemeProvider } from "./components/theme-provider";
 
 // Cek apakah 'window' tersedia sebelum mengaksesnya agar aman saat SSR
 const appName =
@@ -18,12 +19,18 @@ createInertiaApp({
             import.meta.glob("./pages/**/*.jsx"),
         ),
     setup({ el, App, props }) {
+        const root = (
+            <ThemeProvider>
+                <App {...props} />
+            </ThemeProvider>
+        );
+
         if (import.meta.env.SSR) {
-            return <App {...props} />;
+            return root;
         }
-        hydrateRoot(el, <App {...props} />);
+        hydrateRoot(el, root);
     },
     progress: {
-        color: "#4b5563",
+        color: "#2563eb",
     },
 });
