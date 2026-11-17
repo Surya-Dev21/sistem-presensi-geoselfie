@@ -45,11 +45,12 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $user ? [
-                    'nip'   => $user->nip ?? null,
-                    'name'  => $user->nama ?? $user->name ?? $user->email ?? 'Pengguna',
-                    'nama'  => $user->nama ?? $user->name ?? $user->email ?? 'Pengguna',
-                    'email' => $user->email ?? null,
-                    'jabatan' => $user->jabatan ?? ($user->role ?? null),
+                    'nip'            => $user->nip ?? null,
+                    'name'           => $user->nama ?? $user->name ?? $user->email ?? 'Pengguna',
+                    'nama'           => $user->nama ?? $user->name ?? $user->email ?? 'Pengguna',
+                    'email'          => $user->email ?? null,
+                    'jabatan'        => $user->jabatan ?? ($user->role ?? null),
+                    'jenis_kelamin'  => $user->jenis_kelamin ?? 'L',
                 ] : null,
             ],
             'flash' => [

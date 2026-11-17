@@ -20,20 +20,21 @@ class Pegawai extends Authenticatable
         'nip',
         'nama_lengkap',
         'jabatan',
+        'jenis_kelamin',
         'no_hp',
         'email',
         'password',
     ];
 
     /**
-     * Alias agar kolom `nama_lengkap` tetap bisa diakses via $pegawai->nama
+     * Alias agar kolom `nama_lengkap` bisa diakses via $pegawai->nama
      */
-    public function getNamaAttribute()
+    public function getNamaAttribute(): ?string
     {
         return $this->attributes['nama_lengkap'] ?? null;
     }
 
-    public function setNamaAttribute($value)
+    public function setNamaAttribute(string $value): void
     {
         $this->attributes['nama_lengkap'] = $value;
     }

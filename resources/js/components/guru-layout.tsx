@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, usePage, router } from "@inertiajs/react";
 import {
     FiHome,
-    FiBookOpen,
     FiClock,
     FiCalendar,
     FiFileText,
@@ -10,22 +9,44 @@ import {
     FiLogOut,
     FiMenu,
     FiX,
-    FiChevronRight,
+    FiChevronDown,
+    FiBell,
+    FiSettings,
 } from "react-icons/fi";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { FlashAlert } from "@/components/flash-alert";
-import { AbsensiStatusBadge } from "@/components/absensi-status-badge";
 
 const SCHOOL_LOGO = "/images/smkpbb.png";
 const SCHOOL_NAME = "SMK Pembangunan Bandung Barat";
+const SCHOOL_SHORT = "SIMAG";
+
+// === SMK PBB Brand Colors ===
+// Primary: Merah Marun  #8B1A1A  |  Accent: Emas/Gold  #C8A951  |  Neutral sidebar: putih + border slate-100
+// Header & sidebar mengikuti palet merah marun SMK PBB Bandung Barat
 
 interface GuruLayoutProps {
     children: React.ReactNode;
     title?: string;
 }
 
+type JenisKelamin = "L" | "P";
+
+function sapaanGuru(nama: string | undefined, jk: JenisKelamin = "L"): string {
+    if (!nama) return "Bapak/Ibu Guru";
+    return `${jk === "P" ? "Ibu" : "Bapak"} ${nama}`;
+}
+
+function getInitials(nama: string | undefined): string {
+    if (!nama) return "G";
+    return nama
+        .split(" ")
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p[0]?.toUpperCase() ?? "")
+        .join("");
+}
+
 export default function GuruLayout({ children, title }: GuruLayoutProps) {
-    const { auth, url } = usePage().props as {
+    const { auth, url, statusAbsen } = usePage().props as {
         auth?: {
             user?: {
                 nama?: string;
@@ -33,6 +54,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                 nip?: string;
                 email?: string;
                 jabatan?: string;
+                jenis_kelamin?: JenisKelamin;
             };
         };
         url?: string;
@@ -40,15 +62,26 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
     };
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-    const user = auth?.user || {
+    const user = auth?.user ?? {
         nama: "Guru / Pegawai",
         nip: "-",
         email: "-",
         jabatan: "Guru",
+        jenis_kelamin: "L" as JenisKelamin,
     };
 
-    const currentPath = typeof window !== "undefined" ? window.location.pathname : (url || "/dashboard");
+    const jk: JenisKelamin = (user.jenis_kelamin as JenisKelamin) ?? "L";
+    const namaLengkap = user.nama || user.name || "Guru";
+    const sapaan = sapaanGuru(namaLengkap, jk);
+    const jabatan = user.jabatan || "Pegawai";
+    const initials = getInitials(namaLengkap);
+
+    const currentPath =
+        typeof window !== "undefined"
+            ? window.location.pathname
+            : (url || "/dashboard");
 
     const navigation = [
         {
@@ -84,149 +117,206 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
     ];
 
     const handleLogout = () => {
+        setIsDropdownOpen(false);
         router.post("/logout");
     };
 
+    // Aktif nav style
+    const activeClass =
+        "bg-[#8B1A1A]/10 text-[#8B1A1A] font-semibold border-r-4 border-[#8B1A1A]";
+    const inactiveClass =
+        "text-slate-600 hover:bg-slate-100 hover:text-[#8B1A1A] transition-colors";
+
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col lg:flex-row transition-colors">
-            {/* BACKDROP MOBILE */}
+        <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+            {/* ============ BACKDROP MOBILE ============ */}
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/40 z-40 lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
 
-            {/* SIDEBAR */}
+            {/* ============ SIDEBAR ============ */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+                className={`fixed inset-y-0 left-0 z-50 w-60 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
                     isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
                 }`}
             >
-                {/* TOP BRANDING */}
-                <div>
-                    <div className="h-20 px-6 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80">
-                        <Link href="/dashboard" className="flex items-center gap-3">
-                            <img
-                                src={SCHOOL_LOGO}
-                                alt={`Logo ${SCHOOL_NAME}`}
-                                className="h-11 w-11 object-contain drop-shadow-sm transition-transform duration-200 hover:scale-105"
-                            />
-                            <div>
-                                <span className="font-extrabold text-lg text-slate-900 dark:text-white tracking-tight block leading-tight">
-                                    SIMAG
-                                </span>
-                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold tracking-wide uppercase line-clamp-1">
-                                    SMK PBB
-                                </span>
-                            </div>
-                        </Link>
-
-                        <button
-                            type="button"
-                            onClick={() => setIsSidebarOpen(false)}
-                            className="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                            aria-label="Tutup menu"
-                        >
-                            <FiX className="h-5 w-5" />
-                        </button>
-                    </div>
-
-                    {/* USER CARD MINI */}
-                    <div className="p-4 m-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/60">
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Masuk sebagai:</p>
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate mt-0.5">
-                            {user.nama || user.name || "Guru"}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[11px] font-mono font-medium text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                                NIP. {user.nip || "-"}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* NAV LINKS */}
-                    <nav className="px-4 space-y-1.5 mt-2">
-                        {navigation.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    className={`flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold transition-all duration-150 ${
-                                        item.active
-                                            ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                                            : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/70"
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Icon className={`h-5 w-5 ${item.active ? "text-white" : "text-slate-400 group-hover:text-slate-600 dark:text-slate-400"}`} />
-                                        <span>{item.name}</span>
-                                    </div>
-                                    {item.active && <FiChevronRight className="h-4 w-4 text-white/70" />}
-                                </Link>
-                            );
-                        })}
-                    </nav>
-
-                    {/* STATUS PRESENSI HARI INI - Link Presensi Harian diberi state jelas */}
-                    <AbsensiStatusBadge />
-
+                {/* Sidebar Header: Logo + Close btn (mobile) */}
+                <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 bg-[#8B1A1A]">
+                    <Link href="/dashboard" className="flex items-center gap-2.5">
+                        <img
+                            src={SCHOOL_LOGO}
+                            alt={`Logo ${SCHOOL_NAME}`}
+                            className="h-8 w-8 object-contain rounded"
+                        />
+                        <span className="text-sm font-black text-white tracking-wide">
+                            {SCHOOL_SHORT}
+                        </span>
+                    </Link>
+                    <button
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="lg:hidden p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10"
+                        aria-label="Tutup sidebar"
+                    >
+                        <FiX className="h-4 w-4" />
+                    </button>
                 </div>
 
-                {/* BOTTOM ACTIONS */}
-                <div className="p-4 border-t border-slate-100 dark:border-slate-800/80 space-y-2">
-                    <div className="flex items-center justify-between px-2 py-1">
-                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                            Tampilan
-                        </span>
-                        <ThemeToggle />
-                    </div>
+                {/* Nav Links */}
+                <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+                    <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Menu Utama
+                    </p>
+                    {navigation.map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                                item.active ? activeClass : inactiveClass
+                            }`}
+                        >
+                            <item.icon
+                                className={`h-4 w-4 flex-shrink-0 ${
+                                    item.active
+                                        ? "text-[#8B1A1A]"
+                                        : "text-slate-400"
+                                }`}
+                            />
+                            <span>{item.name}</span>
+                        </Link>
+                    ))}
+                </nav>
 
-                    <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                    >
-                        <FiLogOut className="h-4 w-4" />
-                        <span>Keluar Akun</span>
-                    </button>
+                {/* Sidebar Footer: NIP */}
+                <div className="border-t border-slate-100 px-4 py-3 bg-slate-50">
+                    <p className="text-[10px] text-slate-400 font-medium">
+                        NIP. {user.nip || "-"}
+                    </p>
+                    <p className="text-xs text-slate-700 font-semibold truncate">
+                        {namaLengkap}
+                    </p>
+                    <p className="text-[10px] text-[#8B1A1A] font-medium">{jabatan}</p>
                 </div>
             </aside>
 
-            {/* MAIN CONTENT AREA */}
+            {/* ============ MAIN AREA ============ */}
             <div className="flex-1 flex flex-col min-w-0">
-                {/* TOPBAR MOBILE & DESKTOP */}
-                <header className="sticky top-0 z-30 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setIsSidebarOpen(true)}
-                            className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none"
-                            aria-label="Buka menu navigasi"
-                        >
-                            <FiMenu className="h-6 w-6" />
-                        </button>
-                        <h1 className="text-base sm:text-lg font-bold text-slate-800 dark:text-slate-100 truncate">
-                            {title || "Portal Presensi Guru"}
-                        </h1>
+                {/* ============ HEADER ============ */}
+                <header className="sticky top-0 z-30 h-14 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shadow-sm">
+                    {/* Hamburger (mobile) */}
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#8B1A1A] transition-colors flex-shrink-0"
+                        aria-label="Buka sidebar"
+                    >
+                        <FiMenu className="h-5 w-5" />
+                    </button>
+
+                    {/* Page Title */}
+                    <div className="hidden lg:block">
+                        <span className="text-sm font-semibold text-slate-700">
+                            {title ?? "Portal Guru"}
+                        </span>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="hidden sm:flex flex-col text-right">
-                            <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
-                                {user.nama || user.name || "Guru"}
+                    {/* Spacer */}
+                    <div className="flex-1" />
+
+                    {/* Bell Notification */}
+                    <button
+                        className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#8B1A1A] transition-colors"
+                        aria-label="Notifikasi"
+                        title="Notifikasi"
+                    >
+                        <FiBell className="h-5 w-5" />
+                        {/* Badge notif — static placeholder */}
+                        {/* <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white" /> */}
+                    </button>
+
+                    {/* User Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsDropdownOpen((v) => !v)}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-slate-100 transition-colors max-w-[220px]"
+                            aria-expanded={isDropdownOpen}
+                            aria-haspopup="true"
+                        >
+                            {/* Avatar */}
+                            <span className="h-8 w-8 rounded-full flex-shrink-0 bg-[#8B1A1A] text-white flex items-center justify-center text-xs font-bold ring-2 ring-[#C8A951]">
+                                {initials}
                             </span>
-                            <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                {SCHOOL_NAME}
+
+                            {/* Nama + Jabatan */}
+                            <span className="hidden sm:flex flex-col text-left leading-tight min-w-0">
+                                <span className="text-xs font-bold text-slate-800 truncate">
+                                    {sapaan}
+                                </span>
+                                <span className="text-[10px] text-slate-500 truncate">
+                                    {jabatan}
+                                </span>
                             </span>
-                        </div>
-                        <ThemeToggle className="sm:hidden" />
+
+                            <FiChevronDown
+                                className={`h-3.5 w-3.5 text-slate-400 flex-shrink-0 transition-transform ${
+                                    isDropdownOpen ? "rotate-180" : ""
+                                }`}
+                            />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {isDropdownOpen && (
+                            <>
+                                <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={() => setIsDropdownOpen(false)}
+                                    aria-hidden="true"
+                                />
+                                <div
+                                    role="menu"
+                                    className="absolute right-0 mt-2 w-52 rounded-2xl bg-white shadow-xl border border-slate-200 py-1.5 z-20"
+                                >
+                                    {/* Info user */}
+                                    <div className="px-4 py-2.5 border-b border-slate-100">
+                                        <p className="text-xs font-bold text-slate-800 truncate">
+                                            {sapaan}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                                            NIP. {user.nip || "-"}
+                                        </p>
+                                    </div>
+
+                                    {/* Profil */}
+                                    <Link
+                                        href="/profil"
+                                        role="menuitem"
+                                        onClick={() => setIsDropdownOpen(false)}
+                                        className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                    >
+                                        <FiSettings className="h-4 w-4 text-slate-400" />
+                                        Edit Profil
+                                    </Link>
+
+                                    {/* Keluar */}
+                                    <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#8B1A1A] hover:bg-red-50 transition-colors"
+                                    >
+                                        <FiLogOut className="h-4 w-4" />
+                                        Keluar
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </header>
 
-                {/* CONTENT CONTAINER */}
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+                {/* ============ PAGE CONTENT ============ */}
+                <main className="flex-1 p-3 sm:p-4 lg:p-6 max-w-7xl w-full mx-auto">
                     <FlashAlert />
                     {children}
                 </main>

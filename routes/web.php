@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\IzinController;
 use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\ProfilController;
 
 // 1. Halaman Utama (Bisa diakses siapa saja)
 Route::get('/', function () {
