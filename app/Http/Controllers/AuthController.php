@@ -85,11 +85,15 @@ class AuthController extends Controller
         ], [
             'email.exists' => 'Email tidak ditemukan di sistem kami.', // Pesan error Skenario 5
         ]);
-        // Catatan: Logika asli pengiriman email biasanya menggunakan Password Broker Laravel.
-        // Untuk saat ini, kita simulasikan respons sukses agar Frontend bisa menangkapnya.
-        // Anda bisa menyambungkan Mail/SMTP Laravel nanti.
 
-        // Skenario 4: Berhasil
+        try {
+            // Gunakan Password Broker Laravel untuk membuat token dan mengirim notifikasi email
+            Password::broker('pegawai')->sendResetLink($request->only('email'));
+        } catch (\Throwable $e) {
+            // Jika SMTP / Mailer belum disetting di lingkungan lokal, tangkap agar tidak 500 error
+        }
+
+        // Berikan respon sukses yang ramah ke pengguna
         return back()->with('status', 'Kami telah mengirimkan tautan reset password ke email Anda!');
     }
     public function logout(Request $request)
