@@ -3,7 +3,6 @@ import { Head, useForm, usePage } from '@inertiajs/react';
 import {
     FiUser,
     FiSave,
-    FiAlertTriangle,
     FiEye,
     FiEyeOff,
     FiLock,
@@ -32,7 +31,7 @@ function Field({ label, hint, error, icon: Icon, children }) {
                 <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">{hint}</p>
             )}
             {error && (
-                <p className="text-[10px] text-[#8B1A1A] mt-1 font-medium">{error}</p>
+                <p className="text-[10px] text-rose-600 mt-1 font-medium">{error}</p>
             )}
         </div>
     );
@@ -48,13 +47,13 @@ function PasswordInput({ value, onChange, placeholder, show, onToggle, error }) 
                 placeholder={placeholder}
                 autoComplete="new-password"
                 className={`w-full rounded-lg border ${
-                    error ? 'border-[#8B1A1A]' : 'border-slate-300'
-                } focus:border-[#8B1A1A] focus:ring-0 outline-none text-sm py-2 pl-3 pr-10 text-slate-900 transition-colors`}
+                    error ? 'border-rose-400' : 'border-slate-300'
+                } focus:border-blue-600 focus:ring-0 outline-none text-sm py-2 pl-3 pr-10 text-slate-900 transition-colors`}
             />
             <button
                 type="button"
                 onClick={onToggle}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#8B1A1A] transition p-0.5"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-700 transition p-0.5"
                 aria-label={show ? 'Sembunyikan password' : 'Tampilkan password'}
             >
                 {show ? <FiEyeOff className="h-4 w-4" /> : <FiEye className="h-4 w-4" />}
@@ -95,8 +94,8 @@ export default function Profil({ pegawai }) {
 
     const inFieldClass = (err) =>
         `w-full rounded-lg border ${
-            err ? 'border-[#8B1A1A]' : 'border-slate-300'
-        } focus:border-[#8B1A1A] focus:ring-0 outline-none text-sm py-2 pl-9 pr-3 text-slate-900 transition-colors`;
+            err ? 'border-rose-400' : 'border-slate-300'
+        } focus:border-blue-600 focus:ring-0 outline-none text-sm py-2 pl-9 pr-3 text-slate-900 transition-colors`;
 
     return (
         <GuruLayout title="Profil Saya">
@@ -116,9 +115,9 @@ export default function Profil({ pegawai }) {
                 {/* ===== FORM ===== */}
                 <form onSubmit={triggerConfirm}>
                     {/* Kartu: Info Dasar */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden mb-4">
                         <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                            <FiUser className="h-4 w-4 text-[#8B1A1A]" />
+                            <FiUser className="h-4 w-4 text-blue-700" />
                             <h3 className="text-sm font-bold text-slate-800">Informasi Pegawai</h3>
                         </div>
 
@@ -164,9 +163,9 @@ export default function Profil({ pegawai }) {
                     </div>
 
                     {/* Kartu: Ubah Password */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden mb-4">
                         <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                            <FiKey className="h-4 w-4 text-[#8B1A1A]" />
+                            <FiKey className="h-4 w-4 text-blue-700" />
                             <div>
                                 <h3 className="text-sm font-bold text-slate-800 leading-tight">Ubah Kata Sandi</h3>
                                 <p className="text-[10px] text-slate-400">Biarkan kosong jika tidak ingin mengganti password.</p>
@@ -214,11 +213,11 @@ export default function Profil({ pegawai }) {
                         </div>
                     </div>
 
-                    {/* Tombol Submit */}
+                    {/* Tombol Submit Biru Utama */}
                     <button
                         type="submit"
                         disabled={processing}
-                        className="w-full py-2.5 bg-[#8B1A1A] hover:bg-[#6B1414] active:scale-[0.98] text-white font-bold text-sm rounded-xl shadow-md transition flex justify-center items-center gap-2 disabled:opacity-60"
+                        className="w-full py-2.5 bg-blue-700 hover:bg-blue-800 active:scale-[0.98] text-white font-bold text-sm rounded-xl shadow-xs transition flex justify-center items-center gap-2 disabled:opacity-60"
                     >
                         <FiSave className="h-4 w-4" />
                         <span>{processing ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
@@ -230,7 +229,7 @@ export default function Profil({ pegawai }) {
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-slate-200 text-center">
-                        <div className="w-11 h-11 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-3 text-[#8B1A1A]">
+                        <div className="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-blue-700">
                             <FiShield className="h-5 w-5" />
                         </div>
                         <h3 className="text-sm font-bold text-slate-800">Konfirmasi Pembaruan</h3>
@@ -248,7 +247,7 @@ export default function Profil({ pegawai }) {
                             <button
                                 type="button"
                                 onClick={handleSave}
-                                className="py-2 bg-[#8B1A1A] hover:bg-[#6B1414] text-white font-bold rounded-xl text-xs transition"
+                                className="py-2 bg-blue-700 hover:bg-blue-800 text-white font-bold rounded-xl text-xs transition"
                             >
                                 Ya, Simpan
                             </button>

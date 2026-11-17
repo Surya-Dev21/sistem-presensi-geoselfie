@@ -112,47 +112,47 @@ export default function Dashboard({
             <Head title="Dashboard Guru - Portal SIMAG" />
 
             <div className="space-y-4">
-                {/* ===== HERO BANNER ===== */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#8B1A1A] via-[#A52020] to-[#6B1414] text-white p-5 sm:p-6 shadow-lg">
+                {/* ===== HERO BANNER DENGAN BIRU & KUNING SMK PBB ===== */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 text-white p-5 sm:p-6 shadow-lg shadow-blue-900/10 border-b-4 border-amber-400">
                     <div className="relative z-10 max-w-2xl space-y-1.5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/15 text-red-100">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-white/15 text-blue-100">
                             Sistem Informasi Manajemen Guru
                         </span>
                         <h2 className="text-lg sm:text-xl font-black tracking-tight text-white leading-tight">
                             Selamat Datang, {sapaan}!
                         </h2>
-                        <p className="text-xs text-red-100 leading-relaxed max-w-lg">
+                        <p className="text-xs text-blue-100 leading-relaxed max-w-lg">
                             Pastikan presensi geoselfie dilakukan tepat waktu sesuai jadwal mengajar hari ini.
                         </p>
                     </div>
                     {/* Decorative */}
                     <div className="absolute -bottom-6 -right-6 w-36 h-36 rounded-full bg-white/10 blur-2xl pointer-events-none" />
-                    <div className="absolute top-2 right-8 w-16 h-16 rounded-full bg-[#C8A951]/20 blur-xl pointer-events-none" />
+                    <div className="absolute top-2 right-8 w-16 h-16 rounded-full bg-amber-400/20 blur-xl pointer-events-none" />
                 </div>
 
                 {/* ===== GRID UTAMA ===== */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* KOLOM KIRI: Jam & Status */}
                     <div className="lg:col-span-1 space-y-4">
-                        {/* Kartu Jam */}
-                        <div className="rounded-2xl bg-gradient-to-br from-[#8B1A1A] to-[#6B1414] text-white p-5 shadow-md">
-                            <p className="text-[10px] font-semibold text-red-200 uppercase tracking-wider mb-1">
+                        {/* Kartu Jam (Biru SMK) */}
+                        <div className="rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 text-white p-5 shadow-md">
+                            <p className="text-[10px] font-semibold text-blue-200 uppercase tracking-wider mb-1">
                                 Waktu Sekarang
                             </p>
                             <p className="text-3xl font-black tracking-tight tabular-nums leading-none">
                                 {formatJam}
                             </p>
-                            <p className="text-xs text-red-200 mt-1.5 capitalize">{formatTanggal}</p>
+                            <p className="text-xs text-blue-200 mt-1.5 capitalize">{formatTanggal}</p>
                         </div>
 
                         {/* Acuan Masuk */}
-                        <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
+                        <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-xs">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                                 Acuan Jam Masuk Hari Ini
                             </p>
                             <div className="flex items-center gap-2">
-                                <FiClock className="h-5 w-5 text-[#8B1A1A] flex-shrink-0" />
-                                <p className="text-xl font-black text-[#8B1A1A] tabular-nums">
+                                <FiClock className="h-5 w-5 text-blue-700 flex-shrink-0" />
+                                <p className="text-xl font-black text-blue-700 tabular-nums">
                                     {jamAcuanMasuk ?? "--:--"}
                                 </p>
                             </div>
@@ -165,12 +165,12 @@ export default function Dashboard({
 
                         {/* Status Absen */}
                         <div
-                            className={`rounded-2xl border p-4 shadow-sm ${
+                            className={`rounded-2xl border p-4 shadow-xs ${
                                 belumMasuk
                                     ? "bg-white border-slate-200"
                                     : sudahMasuk
                                     ? "bg-amber-50 border-amber-200"
-                                    : "bg-green-50 border-green-200"
+                                    : "bg-emerald-50 border-emerald-200"
                             }`}
                         >
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -182,7 +182,7 @@ export default function Dashboard({
                                 ) : sudahMasuk ? (
                                     <FiCheckCircle className="h-5 w-5 text-amber-500 flex-shrink-0" />
                                 ) : (
-                                    <FiCheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                                    <FiCheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0" />
                                 )}
                                 <span
                                     className={`text-sm font-bold ${
@@ -190,7 +190,7 @@ export default function Dashboard({
                                             ? "text-slate-600"
                                             : sudahMasuk
                                             ? "text-amber-700"
-                                            : "text-green-700"
+                                            : "text-emerald-700"
                                     }`}
                                 >
                                     {statusTeks}
@@ -211,11 +211,11 @@ export default function Dashboard({
                                 </div>
                             )}
 
-                            {/* CTA Presensi */}
+                            {/* CTA Presensi (Warna Biru Utama) */}
                             {!sudahSelesai && (
                                 <Link
                                     href="/absensi"
-                                    className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-bold bg-[#8B1A1A] text-white hover:bg-[#6B1414] transition-colors"
+                                    className="mt-3 flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-bold bg-blue-700 text-white hover:bg-blue-800 transition-colors shadow-xs"
                                 >
                                     <FiCamera className="h-3.5 w-3.5" />
                                     {belumMasuk ? "Presensi Masuk" : "Presensi Pulang"}
@@ -227,9 +227,9 @@ export default function Dashboard({
                     {/* KOLOM KANAN: Jadwal + Quick Actions */}
                     <div className="lg:col-span-2 space-y-4">
                         {/* Jadwal Hari Ini */}
-                        <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-sm">
+                        <div className="rounded-2xl bg-white border border-slate-200 p-4 shadow-xs">
                             <div className="flex items-center gap-2 mb-3">
-                                <FiBookOpen className="h-4 w-4 text-[#8B1A1A]" />
+                                <FiBookOpen className="h-4 w-4 text-blue-700" />
                                 <h3 className="text-sm font-bold text-slate-800">Jadwal Mengajar Hari Ini</h3>
                             </div>
 
@@ -240,7 +240,7 @@ export default function Dashboard({
                                             key={i}
                                             className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
                                         >
-                                            <div className="w-1.5 h-10 rounded-full bg-[#8B1A1A] flex-shrink-0" />
+                                            <div className="w-1.5 h-10 rounded-full bg-blue-700 flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-xs font-bold text-slate-800 truncate">
                                                     {jadwal.mata_pelajaran}
@@ -250,7 +250,7 @@ export default function Dashboard({
                                                 </p>
                                             </div>
                                             <div className="text-right flex-shrink-0">
-                                                <p className="text-xs font-bold text-[#8B1A1A] tabular-nums">
+                                                <p className="text-xs font-bold text-blue-700 tabular-nums">
                                                     {jadwal.jam_mulai}
                                                 </p>
                                                 <p className="text-[10px] text-slate-400 tabular-nums">
@@ -283,9 +283,9 @@ export default function Dashboard({
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className="group bg-white border border-slate-200 p-3.5 rounded-2xl hover:border-[#8B1A1A] hover:shadow-md transition-all flex flex-col gap-2"
+                                        className="group bg-white border border-slate-200 p-3.5 rounded-2xl hover:border-blue-400 hover:shadow-md transition-all flex flex-col gap-2"
                                     >
-                                        <div className="w-8 h-8 bg-red-50 text-[#8B1A1A] rounded-xl flex items-center justify-center group-hover:bg-[#8B1A1A] group-hover:text-white transition-colors">
+                                        <div className="w-8 h-8 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center group-hover:bg-blue-700 group-hover:text-white transition-colors">
                                             <item.icon className="h-4 w-4" />
                                         </div>
                                         <div>
@@ -296,7 +296,7 @@ export default function Dashboard({
                                                 {item.desc}
                                             </p>
                                         </div>
-                                        <div className="flex items-center gap-1 text-[10px] font-semibold text-[#8B1A1A] group-hover:translate-x-0.5 transition-transform mt-auto">
+                                        <div className="flex items-center gap-1 text-[10px] font-semibold text-blue-700 group-hover:translate-x-0.5 transition-transform mt-auto">
                                             <span>{item.cta}</span>
                                             <FiArrowRight className="h-3 w-3" />
                                         </div>

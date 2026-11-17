@@ -20,8 +20,7 @@ const SCHOOL_NAME = "SMK Pembangunan Bandung Barat";
 const SCHOOL_SHORT = "SIMAG";
 
 // === SMK PBB Brand Colors ===
-// Primary: Merah Marun  #8B1A1A  |  Accent: Emas/Gold  #C8A951  |  Neutral sidebar: putih + border slate-100
-// Header & sidebar mengikuti palet merah marun SMK PBB Bandung Barat
+// Primary: Biru (#0c4ea2 / #1e40af) | Accent: Kuning / Emas (#f59e0b / #eab308)
 
 interface GuruLayoutProps {
     children: React.ReactNode;
@@ -121,11 +120,11 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
         router.post("/logout");
     };
 
-    // Aktif nav style
+    // Style navigasi aktif (Biru dan aksen Kuning)
     const activeClass =
-        "bg-[#8B1A1A]/10 text-[#8B1A1A] font-semibold border-r-4 border-[#8B1A1A]";
+        "bg-blue-50 text-blue-700 font-semibold border-r-4 border-amber-500";
     const inactiveClass =
-        "text-slate-600 hover:bg-slate-100 hover:text-[#8B1A1A] transition-colors";
+        "text-slate-600 hover:bg-slate-100 hover:text-blue-700 transition-colors";
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
@@ -143,15 +142,15 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                     isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
                 }`}
             >
-                {/* Sidebar Header: Logo + Close btn (mobile) */}
-                <div className="h-14 px-4 flex items-center justify-between border-b border-slate-100 bg-[#8B1A1A]">
+                {/* Sidebar Header: Logo SMK + Brand Biru */}
+                <div className="h-14 px-4 flex items-center justify-between border-b border-blue-900 bg-blue-800">
                     <Link href="/dashboard" className="flex items-center gap-2.5">
                         <img
                             src={SCHOOL_LOGO}
                             alt={`Logo ${SCHOOL_NAME}`}
-                            className="h-8 w-8 object-contain rounded"
+                            className="h-8 w-8 object-contain rounded bg-white/10 p-0.5"
                         />
-                        <span className="text-sm font-black text-white tracking-wide">
+                        <span className="text-sm font-black text-amber-400 tracking-wide">
                             {SCHOOL_SHORT}
                         </span>
                     </Link>
@@ -181,7 +180,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                             <item.icon
                                 className={`h-4 w-4 flex-shrink-0 ${
                                     item.active
-                                        ? "text-[#8B1A1A]"
+                                        ? "text-blue-700"
                                         : "text-slate-400"
                                 }`}
                             />
@@ -190,7 +189,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                     ))}
                 </nav>
 
-                {/* Sidebar Footer: NIP */}
+                {/* Sidebar Footer: Info Pengguna */}
                 <div className="border-t border-slate-100 px-4 py-3 bg-slate-50">
                     <p className="text-[10px] text-slate-400 font-medium">
                         NIP. {user.nip || "-"}
@@ -198,18 +197,18 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                     <p className="text-xs text-slate-700 font-semibold truncate">
                         {namaLengkap}
                     </p>
-                    <p className="text-[10px] text-[#8B1A1A] font-medium">{jabatan}</p>
+                    <p className="text-[10px] text-blue-600 font-medium">{jabatan}</p>
                 </div>
             </aside>
 
             {/* ============ MAIN AREA ============ */}
             <div className="flex-1 flex flex-col min-w-0">
                 {/* ============ HEADER ============ */}
-                <header className="sticky top-0 z-30 h-14 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shadow-sm">
+                <header className="sticky top-0 z-30 h-14 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shadow-xs">
                     {/* Hamburger (mobile) */}
                     <button
                         onClick={() => setIsSidebarOpen(true)}
-                        className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#8B1A1A] transition-colors flex-shrink-0"
+                        className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-700 transition-colors flex-shrink-0"
                         aria-label="Buka sidebar"
                     >
                         <FiMenu className="h-5 w-5" />
@@ -227,13 +226,11 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
 
                     {/* Bell Notification */}
                     <button
-                        className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-[#8B1A1A] transition-colors"
+                        className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-700 transition-colors"
                         aria-label="Notifikasi"
                         title="Notifikasi"
                     >
                         <FiBell className="h-5 w-5" />
-                        {/* Badge notif — static placeholder */}
-                        {/* <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white" /> */}
                     </button>
 
                     {/* User Dropdown */}
@@ -244,8 +241,8 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                             aria-expanded={isDropdownOpen}
                             aria-haspopup="true"
                         >
-                            {/* Avatar */}
-                            <span className="h-8 w-8 rounded-full flex-shrink-0 bg-[#8B1A1A] text-white flex items-center justify-center text-xs font-bold ring-2 ring-[#C8A951]">
+                            {/* Avatar Biru dengan Aksen Kuning */}
+                            <span className="h-8 w-8 rounded-full flex-shrink-0 bg-blue-700 text-white flex items-center justify-center text-xs font-bold ring-2 ring-amber-400">
                                 {initials}
                             </span>
 
@@ -304,7 +301,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                                         type="button"
                                         role="menuitem"
                                         onClick={handleLogout}
-                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-[#8B1A1A] hover:bg-red-50 transition-colors"
+                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
                                     >
                                         <FiLogOut className="h-4 w-4" />
                                         Keluar
