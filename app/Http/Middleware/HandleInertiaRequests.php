@@ -57,6 +57,17 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'status' => fn () => $request->session()->get('status'),
             ],
+            // Status presensi hari ini, dipakai GuruLayout untuk state tombol "Presensi Harian"
+            'statusAbsen' => fn () => Auth::guard('pegawai')->check() ? (function () use ($request) {
+                $pegawai = Auth::guard('pegawai')->user();
+                $absen = \App\Models\Absensi::where('nip', $pegawai->nip)
+                    ->where('tgl_absen', now('Asia/Jakarta')->format('Y-m-d'))
+                    ->first();
+                return [
+                    'sudah_masuk'  => $absen && $absen->jam_masuk ? true : false,
+                    'sudah_pulang' => $absen && $absen->jam_keluar ? true : false,
+                ];
+            })() : null,
         ];
     }
 }

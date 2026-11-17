@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('pegawai', function (Blueprint $table) {
             $table->string('nip', 30)->primary();
-            $table->string('nama_lengksp', 150);
+            $table->string('nama_lengkap', 150);
             $table->string('jabatan', 100);
             $table->string('no_hp', 20);
             $table->string('password', 255)->nullable();

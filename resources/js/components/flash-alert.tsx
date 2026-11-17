@@ -46,21 +46,24 @@ export function FlashAlert() {
         success: {
             bg: "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100",
             icon: <FiCheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />,
+            ariaLive: "polite" as const,
         },
         error: {
             bg: "bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-100",
             icon: <FiAlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />,
+            ariaLive: "assertive" as const,
         },
         info: {
             bg: "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100",
             icon: <FiInfo className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />,
+            ariaLive: "polite" as const,
         },
     }[message.type];
 
     return (
         <div
             role="status"
-            aria-live="polite"
+            aria-live={styles.ariaLive}
             className={`mb-6 flex items-start justify-between gap-3 p-4 rounded-2xl border shadow-sm transition-all duration-200 ${styles.bg}`}
         >
             <div className="flex items-start gap-3">

@@ -6,7 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\IzinController;
-use App\Http\Controllers\ProfilController;
+use App\Http\Controllers\ResetPasswordController;
 
 // 1. Halaman Utama (Bisa diakses siapa saja)
 Route::get('/', function () {
@@ -23,6 +23,8 @@ Route::middleware(['guest:pegawai'])->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/lupa-password', [AuthController::class, 'showLupaPassword'])->name('password.request');
     Route::post('/lupa-password', [AuthController::class, 'kirimLinkReset'])->name('password.email');
+    Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [ResetPasswordController::class, 'store'])->name('password.update');
 });
 
 // Rute Login Admin

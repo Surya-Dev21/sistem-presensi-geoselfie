@@ -14,6 +14,7 @@ import {
 } from "react-icons/fi";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { FlashAlert } from "@/components/flash-alert";
+import { AbsensiStatusBadge } from "@/components/absensi-status-badge";
 
 const SCHOOL_LOGO = "/images/smkpbb.png";
 const SCHOOL_NAME = "SMK Pembangunan Bandung Barat";
@@ -35,6 +36,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
             };
         };
         url?: string;
+        statusAbsen?: { sudah_masuk?: boolean; sudah_pulang?: boolean } | null;
     };
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -166,6 +168,10 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                             );
                         })}
                     </nav>
+
+                    {/* STATUS PRESENSI HARI INI - Link Presensi Harian diberi state jelas */}
+                    <AbsensiStatusBadge />
+
                 </div>
 
                 {/* BOTTOM ACTIONS */}
