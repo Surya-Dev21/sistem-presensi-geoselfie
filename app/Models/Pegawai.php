@@ -19,29 +19,26 @@ class Pegawai extends Authenticatable
     protected $fillable = [
         'nip',
         'nama_lengkap',
-        'nama_lengksp',
         'jabatan',
+        'jenis_kelamin',
         'no_hp',
         'email',
         'password',
     ];
 
     /**
-     * Accessor untuk nama agar seragam bisa diakses via $pegawai->nama atau $pegawai->nama_lengkap
+     * Alias agar kolom `nama_lengkap` bisa diakses via $pegawai->nama
      */
-    public function getNamaAttribute()
+    public function getNamaAttribute(): ?string
     {
-        return $this->attributes['nama_lengkap'] ?? $this->attributes['nama_lengksp'] ?? null;
+        return $this->attributes['nama_lengkap'] ?? null;
     }
 
-    public function setNamaAttribute($value)
+    public function setNamaAttribute(string $value): void
     {
-        if (array_key_exists('nama_lengksp', $this->attributes)) {
-            $this->attributes['nama_lengksp'] = $value;
-        } else {
-            $this->attributes['nama_lengkap'] = $value;
-        }
+        $this->attributes['nama_lengkap'] = $value;
     }
+
     protected $hidden = [
         'password',
         'remember_token',
@@ -58,4 +55,3 @@ class Pegawai extends Authenticatable
         return $this->hasMany(Izin::class, 'nip', 'nip');
     }
 }
-

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class ProfilController extends Controller
@@ -30,26 +31,28 @@ class ProfilController extends Controller
         $validated = $request->validate([
             'nama'              => ['required', 'string', 'max:100'],
             'email'             => ['required', 'email', 'max:100', Rule::unique('pegawai', 'email')->ignore($pegawai->nip, 'nip')],
-            'password_lama'     => ['nullable', 'string'],
-            'password_baru'     => ['nullable', 'string', 'min:6', 'confirmed'],
+            'password_lama'     => ['nullable', 'required_with:password_baru', 'string'],
+            'password_baru'     => ['nullable', 'string', Password::min(6), 'confirmed'],
         ], [
             'nama.required'          => 'Nama lengkap wajib diisi.',
             'email.required'         => 'Alamat email wajib diisi.',
             'email.email'            => 'Format email tidak valid.',
             'email.unique'           => 'Alamat email sudah digunakan oleh pegawai lain.',
+            'password_lama.required_with' => 'Password saat ini wajib diisi sebelum mengganti password.',
             'password_baru.min'       => 'Password baru minimal 6 karakter.',
             'password_baru.confirmed' => 'Konfirmasi password baru tidak cocok.',
         ]);
 
         // Validasi password lama jika pengguna hendak mengubah password
         if ($request->filled('password_baru')) {
-            if (!$request->filled('password_lama') || !Hash::check($request->password_lama, $pegawai->password)) {
+            if (!Hash::check($request->password_lama, $pegawai->password)) {
                 return back()->withErrors(['password_lama' => 'Password saat ini yang Anda masukkan salah.']);
             }
             $pegawai->password = Hash::make($request->password_baru);
         }
 
-        $pegawai->nama  = $validated['nama'];
+        // Sanitasi input nama: buang tag HTML & spasi ganda sebelum disimpan
+        $pegawai->nama  = trim(strip_tags($validated['nama']));
         $pegawai->email = $validated['email'];
         $pegawai->save();
 
