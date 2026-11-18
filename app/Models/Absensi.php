@@ -19,8 +19,10 @@ class Absensi extends Model
         'jam_keluar',
         'status',
         'location_in',
+        'jarak_in',
         'foto_in',
         'location_out',
+        'jarak_out',
         'foto_out',
     ];
 
