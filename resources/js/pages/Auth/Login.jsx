@@ -105,7 +105,7 @@ export default function Login({ status, canResetPassword }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-600 selection:text-white lg:grid lg:grid-cols-2">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-800 selection:text-white lg:grid lg:grid-cols-2">
             <Head title="Masuk - Portal SIPRES Guru" />
 
             {/* Panel branding desktop */}
@@ -122,7 +122,7 @@ export default function Login({ status, canResetPassword }) {
             >
                 <div
                     aria-hidden="true"
-                    className="absolute inset-0 bg-linear-to-t from-blue-950/95 via-blue-900/60 to-slate-950/20"
+                    className="absolute inset-0 bg-linear-to-t from-blue-950/95 via-blue-900/80 to-blue-900/40"
                 />
                 <div
                     aria-hidden="true"
@@ -250,7 +250,7 @@ export default function Login({ status, canResetPassword }) {
                                 </Label>
 
                                 {looksLikeEmail && (
-                                    <Badge className="border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] text-indigo-700 shadow-none">
+                                    <Badge className="border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] text-blue-800 shadow-none">
                                         Login Admin
                                     </Badge>
                                 )}
@@ -289,7 +289,7 @@ export default function Login({ status, canResetPassword }) {
                                     className={`h-12 rounded-xl border-slate-300 bg-white pl-11 pr-12 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 ${
                                         errors.identity
                                             ? "border-red-500 focus-visible:border-red-50"
-                                            : "focus-visible:border-blue-600 border-slate-300"
+                                            : "focus-visible:border-blue-800 border-slate-300"
                                     }`}
                                 />
                             </div>
@@ -354,7 +354,7 @@ export default function Login({ status, canResetPassword }) {
                                     className={`h-12 rounded-xl border-slate-300 bg-white pl-11 pr-12 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 ${
                                         errors.password
                                             ? "border-red-500 focus-visible:border-red-50"
-                                            : "focus-visible:border-blue-600 border-slate-300"
+                                            : "focus-visible:border-blue-800 border-slate-300"
                                     }`}
                                 />
                                 <button
@@ -451,7 +451,7 @@ export default function Login({ status, canResetPassword }) {
                                     onCheckedChange={(checked) =>
                                         setData("remember", checked === true)
                                     }
-                                    className="rounded border-slate-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
+                                    className="rounded border-slate-300 data-[state=checked]:border-blue-800 data-[state=checked]:bg-blue-800"
                                 />
                                 <Label
                                     htmlFor="remember"
@@ -463,7 +463,7 @@ export default function Login({ status, canResetPassword }) {
 
                             <Link
                                 href="/lupa-password"
-                                className="text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded"
+                                className="text-xs font-semibold text-blue-800 transition-colors hover:text-blue-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-800 focus-visible:ring-offset-2 rounded"
                             >
                                 Lupa password?
                             </Link>
@@ -485,7 +485,7 @@ export default function Login({ status, canResetPassword }) {
                                 type="submit"
                                 disabled={processing}
                                 aria-busy={processing}
-                                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-base font-bold text-white shadow-lg shadow-blue-600/20 transition-colors duration-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-800 text-base font-bold text-white shadow-lg shadow-blue-900/20 transition-colors duration-200 hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 <AnimatePresence mode="wait" initial={false}>
                                     <motion.span

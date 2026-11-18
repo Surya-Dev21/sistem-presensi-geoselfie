@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, usePage, router } from "@inertiajs/react";
 import {
     FiHome,
@@ -8,39 +8,46 @@ import {
     FiUser,
     FiLogOut,
     FiMenu,
-    FiX,
     FiChevronDown,
     FiBell,
     FiSettings,
+    FiCheckCircle,
+    FiInfo,
 } from "react-icons/fi";
 import { FlashAlert } from "@/components/flash-alert";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const SCHOOL_LOGO = "/images/smkpbb.png";
-const SCHOOL_NAME = "SMK Pembangunan Bandung Barat";
-const SCHOOL_SHORT = "SIMAG";
-
-// === SMK PBB Brand Colors ===
-// Primary: Biru (#0c4ea2 / #1e40af) | Accent: Kuning / Emas (#f59e0b / #eab308)
+const SCHOOL_ABBR = "SIMAG";
+const SCHOOL_FULL = "SMK Pembangunan Bandung Barat";
 
 interface GuruLayoutProps {
     children: React.ReactNode;
     title?: string;
 }
 
-type JenisKelamin = "L" | "P";
+type JK = "L" | "P";
 
-function sapaanGuru(nama: string | undefined, jk: JenisKelamin = "L"): string {
+function sapaan(nama?: string, jk?: JK): string {
     if (!nama) return "Bapak/Ibu Guru";
-    return `${jk === "P" ? "Ibu" : "Bapak"} ${nama}`;
+    // Jika jenis kelamin eksplisit ada, gunakan itu
+    if (jk === "P") return `Ibu ${nama}`;
+    if (jk === "L" && !/(?:ibu|bu |nia|leni|wati|fitri|tri)/i.test(nama)) return `Bapak ${nama}`;
+    
+    // Heuristik nama perempuan Indonesia (contoh: "Nina Leniawati", "Siti", "Tri", dsb.)
+    // ponytail: heuristik sapaan nama; upgrade: simpan kolom jenis_kelamin di tabel pegawai
+    const isPerempuan = /(?:ibu|bu |nia|leni|wati|fitri|tri|siti|ayu|nur|dewi|rahma|putri|mega)/i.test(nama)
+        || /(?:a|i|ni|wi|tri|ty|tya|na|ma|lia|fia|zia|syah)$/i.test(nama.trim());
+    return `${isPerempuan ? "Ibu" : "Bapak"} ${nama}`;
 }
 
-function getInitials(nama: string | undefined): string {
+function initials(nama?: string): string {
     if (!nama) return "G";
     return nama
         .split(" ")
         .filter(Boolean)
         .slice(0, 2)
-        .map((p) => p[0]?.toUpperCase() ?? "")
+        .map((w) => w[0]?.toUpperCase() ?? "")
         .join("");
 }
 
@@ -53,257 +60,297 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                 nip?: string;
                 email?: string;
                 jabatan?: string;
-                jenis_kelamin?: JenisKelamin;
+                jenis_kelamin?: JK;
+                foto?: string | null;
             };
         };
         url?: string;
         statusAbsen?: { sudah_masuk?: boolean; sudah_pulang?: boolean } | null;
     };
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    // State buka/tutup sidebar — di mobile (overlay drawer) & di desktop (collapse/expand)
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [notifOpen, setNotifOpen] = useState(false);
 
-    const user = auth?.user ?? {
-        nama: "Guru / Pegawai",
-        nip: "-",
-        email: "-",
-        jabatan: "Guru",
-        jenis_kelamin: "L" as JenisKelamin,
-    };
+    // Deteksi ukuran layar untuk auto-adjust default sidebar
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth < 1024;
+            setIsMobile(mobile);
+            if (mobile) {
+                setSidebarOpen(false); // default tutup di layar kecil
+            } else {
+                setSidebarOpen(true);  // default terbuka di layar desktop
+            }
+        };
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
-    const jk: JenisKelamin = (user.jenis_kelamin as JenisKelamin) ?? "L";
-    const namaLengkap = user.nama || user.name || "Guru";
-    const sapaan = sapaanGuru(namaLengkap, jk);
-    const jabatan = user.jabatan || "Pegawai";
-    const initials = getInitials(namaLengkap);
+    const user = auth?.user ?? { nama: "Guru", nip: "-", jabatan: "Guru", jenis_kelamin: "L" as JK };
+    const nama = user.nama || user.name || "Guru";
+    const sapa = sapaan(nama, user.jenis_kelamin);
+    const jabatan = user.jabatan || "Guru Mapel";
+    const inits = initials(nama);
 
-    const currentPath =
+    const path =
         typeof window !== "undefined"
             ? window.location.pathname
-            : (url || "/dashboard");
+            : (url ?? "/dashboard");
 
-    const navigation = [
+    const navItems = [
+        { label: "Dashboard",        href: "/dashboard",  Icon: FiHome,     active: path === "/dashboard" },
+        { label: "Presensi Harian",  href: "/absensi",    Icon: FiClock,    active: path.startsWith("/absensi") },
+        { label: "Riwayat Presensi", href: "/kalender",   Icon: FiCalendar, active: path.startsWith("/kalender") },
+        { label: "Pengajuan Izin",   href: "/izin",       Icon: FiFileText, active: path.startsWith("/izin") },
+        { label: "Profil Saya",      href: "/profil",     Icon: FiUser,     active: path.startsWith("/profil") },
+    ];
+
+    // Data notifikasi fungsional (status absen hari ini + pengingat sistem)
+    const notifications = [
         {
-            name: "Dashboard",
-            href: "/dashboard",
-            icon: FiHome,
-            active: currentPath === "/dashboard",
+            id: 1,
+            title: statusAbsen?.sudah_masuk
+                ? (statusAbsen?.sudah_pulang ? "Presensi Lengkap" : "Sudah Absen Masuk")
+                : "Belum Melakukan Absen Masuk",
+            desc: statusAbsen?.sudah_masuk
+                ? (statusAbsen?.sudah_pulang ? "Kehadiran Anda hari ini telah tercatat lengkap." : "Jangan lupa presensi pulang saat sesi selesai.")
+                : "Segera lakukan presensi geoselfie tepat waktu sesuai jadwal.",
+            time: "Hari ini",
+            type: statusAbsen?.sudah_masuk ? "success" : "info",
         },
         {
-            name: "Presensi Harian",
-            href: "/absensi",
-            icon: FiClock,
-            active: currentPath.startsWith("/absensi"),
-        },
-        {
-            name: "Riwayat Presensi",
-            href: "/kalender",
-            icon: FiCalendar,
-            active: currentPath.startsWith("/kalender"),
-        },
-        {
-            name: "Pengajuan Izin",
-            href: "/izin",
-            icon: FiFileText,
-            active: currentPath.startsWith("/izin"),
-        },
-        {
-            name: "Profil Saya",
-            href: "/profil",
-            icon: FiUser,
-            active: currentPath.startsWith("/profil"),
+            id: 2,
+            title: "Pengingat Jadwal",
+            desc: "Pastikan perangkat mengaktifkan izin GPS akurat untuk validasi presensi.",
+            time: "Sistem",
+            type: "info",
         },
     ];
 
-    const handleLogout = () => {
-        setIsDropdownOpen(false);
+    const logout = () => {
+        setDropdownOpen(false);
         router.post("/logout");
     };
 
-    // Style navigasi aktif (Biru dan aksen Kuning)
-    const activeClass =
-        "bg-blue-50 text-blue-700 font-semibold border-r-4 border-amber-500";
-    const inactiveClass =
-        "text-slate-600 hover:bg-slate-100 hover:text-blue-700 transition-colors";
-
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
-            {/* ============ BACKDROP MOBILE ============ */}
-            {isSidebarOpen && (
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col lg:flex-row text-slate-800 dark:text-slate-100">
+
+            {/* ── BACKDROP MOBILE saat sidebar terbuka ── */}
+            {isMobile && sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
+                    className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                    aria-hidden="true"
                 />
             )}
 
-            {/* ============ SIDEBAR ============ */}
+            {/* ════════════════════════════════════
+                SIDEBAR (Bisa Dibuka/Tutup)
+            ════════════════════════════════════ */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 w-60 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
-                    isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
-                }`}
+                className={`
+                    fixed inset-y-0 left-0 z-50 bg-white dark:bg-slate-900 flex flex-col
+                    border-r border-slate-200 dark:border-slate-800 shadow-md
+                    transition-all duration-300 ease-in-out
+                    lg:static
+                    ${isMobile
+                        ? (sidebarOpen ? "translate-x-0 w-64" : "-translate-x-full w-64")
+                        : (sidebarOpen ? "w-64" : "w-0 -translate-x-full lg:translate-x-0 lg:w-0 overflow-hidden border-r-0")
+                    }
+                `}
             >
-                {/* Sidebar Header: Logo SMK + Brand Biru */}
-                <div className="h-14 px-4 flex items-center justify-between border-b border-blue-900 bg-blue-800">
-                    <Link href="/dashboard" className="flex items-center gap-2.5">
+                {/* ── LOGO AREA (Logo asli tanpa background) ── */}
+                <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200 bg-blue-900 text-white min-w-[256px]">
+                    <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
+                        {/* Logo sekolah asli transparan TANPA background tambahan */}
                         <img
                             src={SCHOOL_LOGO}
-                            alt={`Logo ${SCHOOL_NAME}`}
-                            className="h-8 w-8 object-contain rounded bg-white/10 p-0.5"
+                            alt={SCHOOL_FULL}
+                            className="w-9 h-9 object-contain flex-shrink-0"
                         />
-                        <span className="text-sm font-black text-amber-400 tracking-wide">
-                            {SCHOOL_SHORT}
-                        </span>
+                        <div className="min-w-0">
+                            <p className="text-sm font-black text-white tracking-widest leading-none">
+                                {SCHOOL_ABBR}
+                            </p>
+                            <p className="text-[9px] text-blue-100 font-medium leading-tight truncate mt-0.5">
+                                {SCHOOL_FULL}
+                            </p>
+                        </div>
                     </Link>
-                    <button
-                        onClick={() => setIsSidebarOpen(false)}
-                        className="lg:hidden p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10"
-                        aria-label="Tutup sidebar"
-                    >
-                        <FiX className="h-4 w-4" />
-                    </button>
                 </div>
 
-                {/* Nav Links */}
-                <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-                    <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                {/* ── NAVIGASI ── */}
+                <nav className="flex-1 overflow-y-auto py-3 px-2.5 space-y-0.5 min-w-[256px]">
+                    <p className="mb-1.5 px-2.5 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
                         Menu Utama
                     </p>
-                    {navigation.map((item) => (
+                    {navItems.map(({ label, href, Icon, active }) => (
                         <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={() => setIsSidebarOpen(false)}
-                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                                item.active ? activeClass : inactiveClass
-                            }`}
+                            key={href}
+                            href={href}
+                            onClick={() => { if (isMobile) setSidebarOpen(false); }}
+                            className={`
+                                flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all
+                                ${active
+                                    ? "bg-blue-800 text-white shadow-xs"
+                                    : "text-slate-600 hover:bg-blue-50 hover:text-blue-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                                }
+                            `}
                         >
-                            <item.icon
-                                className={`h-4 w-4 flex-shrink-0 ${
-                                    item.active
-                                        ? "text-blue-700"
-                                        : "text-slate-400"
-                                }`}
-                            />
-                            <span>{item.name}</span>
+                            <Icon className={`h-4 w-4 flex-shrink-0 ${active ? "text-white" : "text-slate-400"}`} />
+                            <span className="truncate">{label}</span>
                         </Link>
                     ))}
                 </nav>
 
-                {/* Sidebar Footer: Info Pengguna */}
-                <div className="border-t border-slate-100 px-4 py-3 bg-slate-50">
-                    <p className="text-[10px] text-slate-400 font-medium">
-                        NIP. {user.nip || "-"}
-                    </p>
-                    <p className="text-xs text-slate-700 font-semibold truncate">
-                        {namaLengkap}
-                    </p>
-                    <p className="text-[10px] text-blue-600 font-medium">{jabatan}</p>
+                {/* ── FOOTER SIDEBAR: info user ── */}
+                <div className="border-t border-slate-200 dark:border-slate-800 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 min-w-[256px]">
+                    <p className="text-[10px] text-slate-400 font-mono">NIP. {user.nip || "-"}</p>
+                    <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{nama}</p>
+                    <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-300 truncate">{jabatan}</p>
                 </div>
             </aside>
 
-            {/* ============ MAIN AREA ============ */}
+            {/* ════════════════════════════════════
+                AREA UTAMA
+            ════════════════════════════════════ */}
             <div className="flex-1 flex flex-col min-w-0">
-                {/* ============ HEADER ============ */}
-                <header className="sticky top-0 z-30 h-14 bg-white border-b border-slate-200 flex items-center px-4 gap-3 shadow-xs">
-                    {/* Hamburger (mobile) */}
+
+                {/* ── HEADER ── */}
+                <header className="sticky top-0 z-30 h-13 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-2xs flex items-center px-3 sm:px-5 gap-2.5 sm:gap-3">
+
+                    {/* Tombol Buka/Tutup Sidebar (aktif di mobile & desktop) */}
                     <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-700 transition-colors flex-shrink-0"
-                        aria-label="Buka sidebar"
+                        onClick={() => setSidebarOpen((v) => !v)}
+                        className="p-1.5 rounded-lg text-slate-600 hover:bg-blue-50 hover:text-blue-800 transition-colors flex-shrink-0"
+                        aria-label={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
+                        title={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
                     >
                         <FiMenu className="h-5 w-5" />
                     </button>
 
-                    {/* Page Title */}
-                    <div className="hidden lg:block">
-                        <span className="text-sm font-semibold text-slate-700">
-                            {title ?? "Portal Guru"}
-                        </span>
-                    </div>
+                    {/* Judul halaman */}
+                    <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-white truncate">
+                        {title ?? "Portal Guru"}
+                    </span>
 
-                    {/* Spacer */}
                     <div className="flex-1" />
 
-                    {/* Bell Notification */}
-                    <button
-                        className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-700 transition-colors"
-                        aria-label="Notifikasi"
-                        title="Notifikasi"
-                    >
-                        <FiBell className="h-5 w-5" />
-                    </button>
+                    {/* Tema terang/gelap */}
+                    <ThemeToggle className="h-8 w-8 p-0 flex items-center justify-center" />
 
-                    {/* User Dropdown */}
+                    {/* Lonceng Notifikasi Fungsional */}
                     <div className="relative">
                         <button
-                            onClick={() => setIsDropdownOpen((v) => !v)}
-                            className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-slate-100 transition-colors max-w-[220px]"
-                            aria-expanded={isDropdownOpen}
-                            aria-haspopup="true"
+                            onClick={() => setNotifOpen((v) => !v)}
+                            className="p-2 rounded-lg text-slate-500 hover:bg-blue-50 hover:text-blue-800 transition-colors relative"
+                            title="Notifikasi"
+                            aria-expanded={notifOpen}
                         >
-                            {/* Avatar Biru dengan Aksen Kuning */}
-                            <span className="h-8 w-8 rounded-full flex-shrink-0 bg-blue-700 text-white flex items-center justify-center text-xs font-bold ring-2 ring-amber-400">
-                                {initials}
-                            </span>
+                            <FiBell className="h-4.5 w-4.5" />
+                            {/* Titik indikator notifikasi aktif */}
+                            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
+                        </button>
 
-                            {/* Nama + Jabatan */}
-                            <span className="hidden sm:flex flex-col text-left leading-tight min-w-0">
-                                <span className="text-xs font-bold text-slate-800 truncate">
-                                    {sapaan}
+                        {/* Dropdown Notifikasi */}
+                        {notifOpen && (
+                            <>
+                                <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} aria-hidden="true" />
+                                <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-20 animate-in fade-in zoom-in-95 duration-150">
+                                    <div className="px-3.5 py-1.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                        <p className="text-xs font-bold text-slate-800 dark:text-white">Notifikasi</p>
+                                        <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                                            {notifications.length} Info
+                                        </span>
+                                    </div>
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-700 max-h-72 overflow-y-auto">
+                                        {notifications.map((n) => (
+                                            <div key={n.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                                <div className="flex items-start gap-2">
+                                                    {n.type === "success" ? (
+                                                        <FiCheckCircle className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                                    ) : (
+                                                        <FiInfo className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                                                    )}
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-xs font-bold text-slate-800 dark:text-white leading-tight">
+                                                            {n.title}
+                                                        </p>
+                                                        <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                                                            {n.desc}
+                                                        </p>
+                                                        <span className="text-[9px] text-slate-400 mt-1 block">
+                                                            {n.time}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Foto Bulat + Nama Guru + Mapel + Dropdown Keluar */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setDropdownOpen((v) => !v)}
+                            className="flex items-center gap-2 pl-1 pr-1.5 sm:pr-2 py-1 rounded-xl hover:bg-slate-100 transition-colors"
+                            aria-expanded={dropdownOpen}
+                        >
+                            {/* Avatar bulat guru: foto jika ada, inisial jika belum */}
+                            {user.foto ? (
+                                <img
+                                    src={user.foto}
+                                    alt={sapa}
+                                    className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-full object-cover ring-2 ring-blue-100 flex-shrink-0"
+                                />
+                            ) : (
+                                <span className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-full bg-blue-800 text-white font-bold text-xs flex items-center justify-center ring-2 ring-blue-100 flex-shrink-0">
+                                    {inits}
                                 </span>
-                                <span className="text-[10px] text-slate-500 truncate">
+                            )}
+                            <span className="hidden sm:flex flex-col text-left leading-tight">
+                                <span className="text-xs font-bold text-slate-800 dark:text-white max-w-[160px] truncate">
+                                    {sapa}
+                                </span>
+                                <span className="text-[10px] text-slate-500 max-w-[160px] truncate">
                                     {jabatan}
                                 </span>
                             </span>
-
                             <FiChevronDown
-                                className={`h-3.5 w-3.5 text-slate-400 flex-shrink-0 transition-transform ${
-                                    isDropdownOpen ? "rotate-180" : ""
-                                }`}
+                                className={`h-3.5 w-3.5 text-slate-400 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
                             />
                         </button>
 
-                        {/* Dropdown Menu */}
-                        {isDropdownOpen && (
+                        {/* Menu Dropdown Profil / Keluar */}
+                        {dropdownOpen && (
                             <>
-                                <div
-                                    className="fixed inset-0 z-10"
-                                    onClick={() => setIsDropdownOpen(false)}
-                                    aria-hidden="true"
-                                />
-                                <div
-                                    role="menu"
-                                    className="absolute right-0 mt-2 w-52 rounded-2xl bg-white shadow-xl border border-slate-200 py-1.5 z-20"
-                                >
-                                    {/* Info user */}
-                                    <div className="px-4 py-2.5 border-b border-slate-100">
-                                        <p className="text-xs font-bold text-slate-800 truncate">
-                                            {sapaan}
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 truncate mt-0.5">
-                                            NIP. {user.nip || "-"}
-                                        </p>
+                                <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} aria-hidden="true" />
+                                <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 z-20 animate-in fade-in zoom-in-95 duration-150">
+                                    <div className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-700">
+                                        <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{sapa}</p>
+                                        <p className="text-[10px] text-slate-500 truncate">{jabatan}</p>
+                                        <p className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">NIP. {user.nip || "-"}</p>
                                     </div>
-
-                                    {/* Profil */}
                                     <Link
                                         href="/profil"
-                                        role="menuitem"
-                                        onClick={() => setIsDropdownOpen(false)}
-                                        className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                        onClick={() => setDropdownOpen(false)}
+                                        className="flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-800 dark:hover:text-white transition-colors"
                                     >
-                                        <FiSettings className="h-4 w-4 text-slate-400" />
-                                        Edit Profil
+                                        <FiSettings className="h-3.5 w-3.5 text-slate-400" />
+                                        Profil Saya
                                     </Link>
-
-                                    {/* Keluar */}
                                     <button
-                                        type="button"
-                                        role="menuitem"
-                                        onClick={handleLogout}
-                                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
+                                        onClick={logout}
+                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
                                     >
-                                        <FiLogOut className="h-4 w-4" />
+                                        <FiLogOut className="h-3.5 w-3.5" />
                                         Keluar
                                     </button>
                                 </div>
@@ -312,8 +359,8 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                     </div>
                 </header>
 
-                {/* ============ PAGE CONTENT ============ */}
-                <main className="flex-1 p-3 sm:p-4 lg:p-6 max-w-7xl w-full mx-auto">
+                {/* ── KONTEN HALAMAN ── */}
+                <main className="flex-1 p-3 sm:p-4.5 max-w-7xl w-full mx-auto">
                     <FlashAlert />
                     {children}
                 </main>
