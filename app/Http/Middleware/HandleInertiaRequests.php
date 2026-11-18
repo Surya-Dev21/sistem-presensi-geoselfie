@@ -51,6 +51,7 @@ class HandleInertiaRequests extends Middleware
                     'email'          => $user->email ?? null,
                     'jabatan'        => $user->jabatan ?? ($user->role ?? null),
                     'jenis_kelamin'  => $user->jenis_kelamin ?? 'L',
+                    'foto'           => !empty($user->foto) ? \Illuminate\Support\Facades\Storage::disk('public')->url($user->foto) : null,
                 ] : null,
             ],
             'flash' => [

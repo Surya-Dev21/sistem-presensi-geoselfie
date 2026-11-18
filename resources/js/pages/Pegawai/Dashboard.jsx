@@ -143,7 +143,7 @@ export default function Dashboard({
                         </div>
 
                         {/* Acuan Masuk */}
-                        <div className="rounded-2xl bg-white border border-slate-200 p-3.5 shadow-xs">
+                        <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 shadow-xs">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                                 Acuan Jam Masuk Hari Ini
                             </p>
@@ -164,10 +164,10 @@ export default function Dashboard({
                         <div
                             className={`rounded-2xl border p-3.5 shadow-xs ${
                                 belumMasuk
-                                    ? "bg-white border-slate-200"
+                                    ? "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                                     : sudahMasuk
-                                    ? "bg-blue-50 border-blue-200"
-                                    : "bg-slate-50 border-blue-200"
+                                    ? "bg-blue-50 dark:bg-slate-900 border-blue-200 dark:border-blue-800"
+                                    : "bg-slate-50 dark:bg-slate-900 border-blue-200 dark:border-blue-800"
                             }`}
                         >
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
@@ -189,7 +189,7 @@ export default function Dashboard({
                             </div>
 
                             {adaMasuk && (
-                                <div className="mt-2.5 pt-2 border-t border-slate-200/60 space-y-1">
+                                <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-700 space-y-1">
                                     <div className="flex justify-between text-[11px]">
                                         <span className="text-slate-500">Masuk</span>
                                         <span className="font-bold text-blue-900">{waktuMasuk}</span>
@@ -219,10 +219,10 @@ export default function Dashboard({
                     {/* KOLOM KANAN: Jadwal + Quick Actions */}
                     <div className="lg:col-span-2 space-y-3">
                         {/* Jadwal Hari Ini */}
-                        <div className="rounded-2xl bg-white border border-slate-200 p-3.5 shadow-xs">
+                        <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 shadow-xs">
                             <div className="flex items-center gap-2 mb-2.5">
                                 <FiBookOpen className="h-4 w-4 text-blue-800" />
-                                <h3 className="text-xs sm:text-sm font-bold text-slate-800">
+                                <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">
                                     Jadwal Mengajar Hari Ini
                                 </h3>
                             </div>
@@ -232,11 +232,11 @@ export default function Dashboard({
                                     {jadwalHariIni.map((jadwal, i) => (
                                         <div
                                             key={i}
-                                            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100 hover:bg-blue-50/60 transition-colors"
+                                            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:bg-blue-50/60 dark:hover:bg-slate-700 transition-colors"
                                         >
                                             <div className="w-1.5 h-8 rounded-full bg-blue-800 flex-shrink-0" />
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-xs font-bold text-slate-800 truncate">
+                                                <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
                                                     {jadwal.mata_pelajaran}
                                                 </p>
                                                 <p className="text-[10px] text-slate-500 truncate">
@@ -277,13 +277,13 @@ export default function Dashboard({
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className="group bg-white border border-slate-200 p-3 rounded-2xl hover:border-blue-400 hover:shadow-sm transition-all flex flex-col gap-1.5"
+                                        className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl hover:border-blue-400 hover:shadow-sm transition-all flex flex-col gap-1.5"
                                     >
                                         <div className="w-7 h-7 bg-blue-50 text-blue-800 rounded-xl flex items-center justify-center group-hover:bg-blue-800 group-hover:text-white transition-colors">
                                             <item.icon className="h-3.5 w-3.5" />
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-800 transition-colors">
+                                            <p className="text-xs font-bold text-slate-800 dark:text-white truncate group-hover:text-blue-800 transition-colors">
                                                 {item.label}
                                             </p>
                                             <p className="text-[10px] text-slate-400 line-clamp-1 leading-tight mt-0.5">

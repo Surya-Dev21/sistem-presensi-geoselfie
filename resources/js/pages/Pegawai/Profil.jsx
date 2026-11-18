@@ -9,6 +9,7 @@ import {
     FiMail,
     FiKey,
     FiShield,
+    FiCamera,
 } from 'react-icons/fi';
 import GuruLayout from '@/components/guru-layout';
 
@@ -18,7 +19,7 @@ import GuruLayout from '@/components/guru-layout';
 function Field({ label, hint, error, icon: Icon, children }) {
     return (
         <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1.5">
                 {label}
             </label>
             <div className="relative">
@@ -47,8 +48,8 @@ function PasswordInput({ value, onChange, placeholder, show, onToggle, error }) 
                 placeholder={placeholder}
                 autoComplete="new-password"
                 className={`w-full rounded-lg border ${
-                    error ? 'border-rose-400' : 'border-slate-300'
-                } focus:border-blue-600 focus:ring-0 outline-none text-sm py-2 pl-3 pr-10 text-slate-900 transition-colors`}
+                    error ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700'
+                } focus:border-blue-600 focus:ring-0 outline-none text-sm py-2 pl-3 pr-10 text-slate-900 dark:text-white bg-transparent dark:bg-slate-800 transition-colors`}
             />
             <button
                 type="button"
@@ -73,6 +74,7 @@ export default function Profil({ pegawai }) {
     const [showPassLama, setShowPassLama]     = useState(false);
     const [showPassBaru, setShowPassBaru]     = useState(false);
     const [showPassKonfirm, setShowPassKonfirm] = useState(false);
+    const [fotoPreview, setFotoPreview]           = useState(pegawai?.foto || null);
 
     const { data, setData, put, processing, errors } = useForm({
         nama:                       pegawai?.nama || '',
@@ -80,7 +82,22 @@ export default function Profil({ pegawai }) {
         password_lama:              '',
         password_baru:              '',
         password_baru_confirmation: '',
+        foto:                       null,
     });
+
+    const inisial = (pegawai?.nama || 'G')
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((w) => w[0]?.toUpperCase())
+        .join('');
+
+    const pilihFoto = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setData('foto', file);
+        setFotoPreview(URL.createObjectURL(file));
+    };
 
     const triggerConfirm = (e) => {
         e.preventDefault();
@@ -89,13 +106,13 @@ export default function Profil({ pegawai }) {
 
     const handleSave = () => {
         setShowModal(false);
-        put('/profil');
+        put('/profil', { forceFormData: true, preserveScroll: true });
     };
 
     const inFieldClass = (err) =>
         `w-full rounded-lg border ${
-            err ? 'border-rose-400' : 'border-slate-300'
-        } focus:border-blue-600 focus:ring-0 outline-none text-sm py-2 pl-9 pr-3 text-slate-900 transition-colors`;
+            err ? 'border-rose-400' : 'border-slate-300 dark:border-slate-700'
+        } focus:border-blue-600 focus:ring-0 outline-none text-sm py-2 pl-9 pr-3 text-slate-900 dark:text-white bg-transparent dark:bg-slate-800 transition-colors`;
 
     return (
         <GuruLayout title="Profil Saya">
@@ -104,7 +121,7 @@ export default function Profil({ pegawai }) {
             <div className="max-w-2xl mx-auto space-y-4">
                 {/* PAGE HEADER */}
                 <div>
-                    <h2 className="text-base font-black text-slate-800">
+                    <h2 className="text-base font-black text-slate-800 dark:text-white">
                         Pengaturan Profil &amp; Akun
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -114,11 +131,41 @@ export default function Profil({ pegawai }) {
 
                 {/* ===== FORM ===== */}
                 <form onSubmit={triggerConfirm}>
+                    {/* Kartu: Foto Profil */}
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-4 mb-4 flex items-center gap-4">
+                        <div className="h-16 w-16 shrink-0 rounded-full overflow-hidden bg-blue-800 text-white flex items-center justify-center font-black text-lg ring-2 ring-blue-100">
+                            {fotoPreview ? (
+                                <img src={fotoPreview} alt="Foto profil" className="h-full w-full object-cover" />
+                            ) : (
+                                inisial
+                            )}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm font-bold text-slate-800 dark:text-white">Foto Profil</p>
+                            <label className="mt-1.5 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-800 hover:bg-blue-100 transition">
+                                <FiCamera className="h-3.5 w-3.5" />
+                                Pilih Foto
+                                <input
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    onChange={pilihFoto}
+                                    className="sr-only"
+                                />
+                            </label>
+                            <p className="text-[10px] text-slate-400 mt-1">
+                                JPG, PNG, atau WEBP. Maksimal 2 MB.
+                            </p>
+                            {errors.foto && (
+                                <p className="text-[10px] text-rose-600 mt-1 font-medium">{errors.foto}</p>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Kartu: Info Dasar */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden mb-4">
-                        <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden mb-4">
+                        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                             <FiUser className="h-4 w-4 text-blue-700" />
-                            <h3 className="text-sm font-bold text-slate-800">Informasi Pegawai</h3>
+                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Informasi Pegawai</h3>
                         </div>
 
                         <div className="p-4 space-y-4">
@@ -163,11 +210,11 @@ export default function Profil({ pegawai }) {
                     </div>
 
                     {/* Kartu: Ubah Password */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden mb-4">
-                        <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden mb-4">
+                        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                             <FiKey className="h-4 w-4 text-blue-700" />
                             <div>
-                                <h3 className="text-sm font-bold text-slate-800 leading-tight">Ubah Kata Sandi</h3>
+                                <h3 className="text-sm font-bold text-slate-800 dark:text-white leading-tight">Ubah Kata Sandi</h3>
                                 <p className="text-[10px] text-slate-400">Biarkan kosong jika tidak ingin mengganti password.</p>
                             </div>
                         </div>
@@ -228,11 +275,11 @@ export default function Profil({ pegawai }) {
             {/* ===== MODAL KONFIRMASI ===== */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-slate-200 text-center">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 max-w-sm w-full shadow-2xl border border-slate-200 dark:border-slate-800 text-center">
                         <div className="w-11 h-11 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3 text-blue-700">
                             <FiShield className="h-5 w-5" />
                         </div>
-                        <h3 className="text-sm font-bold text-slate-800">Konfirmasi Pembaruan</h3>
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-white">Konfirmasi Pembaruan</h3>
                         <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
                             Apakah Anda yakin data profil dan informasi akun sudah benar?
                         </p>

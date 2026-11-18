@@ -8,7 +8,6 @@ import {
     FiUser,
     FiLogOut,
     FiMenu,
-    FiX,
     FiChevronDown,
     FiBell,
     FiSettings,
@@ -16,6 +15,7 @@ import {
     FiInfo,
 } from "react-icons/fi";
 import { FlashAlert } from "@/components/flash-alert";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const SCHOOL_LOGO = "/images/smkpbb.png";
 const SCHOOL_ABBR = "SIMAG";
@@ -61,6 +61,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                 email?: string;
                 jabatan?: string;
                 jenis_kelamin?: JK;
+                foto?: string | null;
             };
         };
         url?: string;
@@ -136,7 +137,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-100 flex flex-col lg:flex-row text-slate-800">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col lg:flex-row text-slate-800 dark:text-slate-100">
 
             {/* ── BACKDROP MOBILE saat sidebar terbuka ── */}
             {isMobile && sidebarOpen && (
@@ -152,8 +153,8 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
             ════════════════════════════════════ */}
             <aside
                 className={`
-                    fixed inset-y-0 left-0 z-50 bg-white flex flex-col
-                    border-r border-slate-200 shadow-md
+                    fixed inset-y-0 left-0 z-50 bg-white dark:bg-slate-900 flex flex-col
+                    border-r border-slate-200 dark:border-slate-800 shadow-md
                     transition-all duration-300 ease-in-out
                     lg:static
                     ${isMobile
@@ -180,16 +181,6 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                             </p>
                         </div>
                     </Link>
-
-                    {/* Tombol tutup sidebar (mobile & desktop) */}
-                    <button
-                        onClick={() => setSidebarOpen(false)}
-                        className="p-1 rounded-lg text-blue-100 hover:text-white hover:bg-white/10 transition-colors"
-                        aria-label="Tutup sidebar"
-                        title="Tutup sidebar"
-                    >
-                        <FiX className="h-4 w-4" />
-                    </button>
                 </div>
 
                 {/* ── NAVIGASI ── */}
@@ -206,7 +197,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                                 flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all
                                 ${active
                                     ? "bg-blue-800 text-white shadow-xs"
-                                    : "text-slate-600 hover:bg-blue-50 hover:text-blue-900"
+                                    : "text-slate-600 hover:bg-blue-50 hover:text-blue-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
                                 }
                             `}
                         >
@@ -217,10 +208,10 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                 </nav>
 
                 {/* ── FOOTER SIDEBAR: info user ── */}
-                <div className="border-t border-slate-200 px-3.5 py-2.5 bg-slate-50 min-w-[256px]">
+                <div className="border-t border-slate-200 dark:border-slate-800 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900 min-w-[256px]">
                     <p className="text-[10px] text-slate-400 font-mono">NIP. {user.nip || "-"}</p>
-                    <p className="text-xs font-bold text-slate-800 truncate">{nama}</p>
-                    <p className="text-[10px] font-semibold text-blue-700 truncate">{jabatan}</p>
+                    <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{nama}</p>
+                    <p className="text-[10px] font-semibold text-blue-700 dark:text-blue-300 truncate">{jabatan}</p>
                 </div>
             </aside>
 
@@ -230,7 +221,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
             <div className="flex-1 flex flex-col min-w-0">
 
                 {/* ── HEADER ── */}
-                <header className="sticky top-0 z-30 h-13 bg-white border-b border-slate-200 shadow-2xs flex items-center px-3 sm:px-5 gap-2.5 sm:gap-3">
+                <header className="sticky top-0 z-30 h-13 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-2xs flex items-center px-3 sm:px-5 gap-2.5 sm:gap-3">
 
                     {/* Tombol Buka/Tutup Sidebar (aktif di mobile & desktop) */}
                     <button
@@ -243,11 +234,14 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                     </button>
 
                     {/* Judul halaman */}
-                    <span className="text-xs sm:text-sm font-bold text-slate-700 truncate">
+                    <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-white truncate">
                         {title ?? "Portal Guru"}
                     </span>
 
                     <div className="flex-1" />
+
+                    {/* Tema terang/gelap */}
+                    <ThemeToggle className="h-8 w-8 p-0 flex items-center justify-center" />
 
                     {/* Lonceng Notifikasi Fungsional */}
                     <div className="relative">
@@ -266,16 +260,16 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                         {notifOpen && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} aria-hidden="true" />
-                                <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white shadow-xl border border-slate-200 py-2 z-20 animate-in fade-in zoom-in-95 duration-150">
-                                    <div className="px-3.5 py-1.5 border-b border-slate-100 flex items-center justify-between">
-                                        <p className="text-xs font-bold text-slate-800">Notifikasi</p>
+                                <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-20 animate-in fade-in zoom-in-95 duration-150">
+                                    <div className="px-3.5 py-1.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                        <p className="text-xs font-bold text-slate-800 dark:text-white">Notifikasi</p>
                                         <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
                                             {notifications.length} Info
                                         </span>
                                     </div>
-                                    <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-700 max-h-72 overflow-y-auto">
                                         {notifications.map((n) => (
-                                            <div key={n.id} className="p-3 hover:bg-slate-50 transition-colors">
+                                            <div key={n.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                                 <div className="flex items-start gap-2">
                                                     {n.type === "success" ? (
                                                         <FiCheckCircle className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
@@ -283,7 +277,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                                                         <FiInfo className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                                                     )}
                                                     <div className="min-w-0 flex-1">
-                                                        <p className="text-xs font-bold text-slate-800 leading-tight">
+                                                        <p className="text-xs font-bold text-slate-800 dark:text-white leading-tight">
                                                             {n.title}
                                                         </p>
                                                         <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
@@ -309,12 +303,20 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                             className="flex items-center gap-2 pl-1 pr-1.5 sm:pr-2 py-1 rounded-xl hover:bg-slate-100 transition-colors"
                             aria-expanded={dropdownOpen}
                         >
-                            {/* Avatar bulat guru (biru + teks putih) */}
-                            <span className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-full bg-blue-800 text-white font-bold text-xs flex items-center justify-center ring-2 ring-blue-100 flex-shrink-0">
-                                {inits}
-                            </span>
+                            {/* Avatar bulat guru: foto jika ada, inisial jika belum */}
+                            {user.foto ? (
+                                <img
+                                    src={user.foto}
+                                    alt={sapa}
+                                    className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-full object-cover ring-2 ring-blue-100 flex-shrink-0"
+                                />
+                            ) : (
+                                <span className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-full bg-blue-800 text-white font-bold text-xs flex items-center justify-center ring-2 ring-blue-100 flex-shrink-0">
+                                    {inits}
+                                </span>
+                            )}
                             <span className="hidden sm:flex flex-col text-left leading-tight">
-                                <span className="text-xs font-bold text-slate-800 max-w-[160px] truncate">
+                                <span className="text-xs font-bold text-slate-800 dark:text-white max-w-[160px] truncate">
                                     {sapa}
                                 </span>
                                 <span className="text-[10px] text-slate-500 max-w-[160px] truncate">
@@ -330,16 +332,16 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                         {dropdownOpen && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} aria-hidden="true" />
-                                <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-white shadow-xl border border-slate-200 py-1.5 z-20 animate-in fade-in zoom-in-95 duration-150">
-                                    <div className="px-3.5 py-2 border-b border-slate-100">
-                                        <p className="text-xs font-bold text-slate-800 truncate">{sapa}</p>
+                                <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 z-20 animate-in fade-in zoom-in-95 duration-150">
+                                    <div className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-700">
+                                        <p className="text-xs font-bold text-slate-800 dark:text-white truncate">{sapa}</p>
                                         <p className="text-[10px] text-slate-500 truncate">{jabatan}</p>
                                         <p className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">NIP. {user.nip || "-"}</p>
                                     </div>
                                     <Link
                                         href="/profil"
                                         onClick={() => setDropdownOpen(false)}
-                                        className="flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-800 transition-colors"
+                                        className="flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-blue-800 dark:hover:text-white transition-colors"
                                     >
                                         <FiSettings className="h-3.5 w-3.5 text-slate-400" />
                                         Profil Saya
