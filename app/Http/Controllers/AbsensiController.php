@@ -80,8 +80,8 @@ class AbsensiController extends Controller
             'absenHariIni' => [
                 'sudah_masuk'  => $absenHariIni && $absenHariIni->jam_masuk ? true : false,
                 'sudah_pulang' => $absenHariIni && $absenHariIni->jam_keluar ? true : false,
-                'jam_masuk'    => $absenHariIni ? substr($absenHariIni->jam_masuk, 0, 5) : null,
-                'jam_keluar'   => $absenHariIni ? substr($absenHariIni->jam_keluar, 0, 5) : null,
+                'jam_masuk'    => $absenHariIni?->jam_masuk ? substr($absenHariIni->jam_masuk, 0, 5) : null,
+                'jam_keluar'   => $absenHariIni?->jam_keluar ? substr($absenHariIni->jam_keluar, 0, 5) : null,
             ]
         ]);
     }
@@ -104,6 +104,17 @@ class AbsensiController extends Controller
         $totalIzinSakit = $riwayat->whereIn('status', ['Izin', 'Sakit'])->count();
         $totalAlpa = $riwayat->where('status', 'Alpa')->count();
 
+        // Normalisasi field agar tidak mismatch dengan tabel di Kalender.jsx
+        $riwayat = $riwayat->map(fn ($a) => [
+            'id'         => $a->id,
+            'tgl_absen'  => $a->tgl_absen,
+            'jam_masuk'  => $a->jam_masuk,
+            'jam_keluar' => $a->jam_keluar,
+            'status'     => $a->status ?: 'Hadir',
+            'location_in'  => $a->location_in,
+            'location_out' => $a->location_out,
+        ])->values();
+
         return Inertia::render('Pegawai/Kalender', [
             'riwayat'   => $riwayat,
             'statistik' => [
@@ -125,6 +136,7 @@ class AbsensiController extends Controller
             'tipe_absen' => 'required|in:masuk,pulang',
             'latitude'   => 'required|numeric',
             'longitude'  => 'required|numeric',
+            'jarak'      => 'nullable|integer|min:0',
             'foto'       => 'required|string',
         ]);
 
@@ -150,6 +162,7 @@ class AbsensiController extends Controller
                 [
                     'jam_masuk'   => $timeNow,
                     'location_in' => $coordinates,
+                    'jarak_in'    => $validated['jarak'] ?? null,
                     'foto_in'     => $photoPath,
                     'status'      => 'Hadir',
                 ]
@@ -173,6 +186,7 @@ class AbsensiController extends Controller
             $absensi->update([
                 'jam_keluar'   => $timeNow,
                 'location_out' => $coordinates,
+                'jarak_out'    => $validated['jarak'] ?? null,
                 'foto_out'     => $photoPath,
             ]);
 
