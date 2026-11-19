@@ -37,7 +37,7 @@ test('izin dan sakit muncul sebagai baris riwayat terpisah', function () {
         'tgl_selesai' => tanggalUji(0),
         'status' => 'izin',
         'keterangan' => 'Urusan keluarga',
-        'status_approval' => 'pending',
+        'status_approval' => 'approved',
     ]);
 
     Izin::create([

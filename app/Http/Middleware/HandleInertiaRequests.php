@@ -70,6 +70,27 @@ class HandleInertiaRequests extends Middleware
                     'sudah_pulang' => $absen && $absen->jam_keluar ? true : false,
                 ];
             })() : null,
+            // Notifikasi keputusan izin yang belum dibaca guru
+            'notifikasiIzin' => fn () => Auth::guard('pegawai')->check() ? (function () {
+                $pegawai = Auth::guard('pegawai')->user();
+
+                return \App\Models\Izin::where('nip', $pegawai->nip)
+                    ->whereIn('status_approval', ['approved', 'rejected'])
+                    ->whereNull('dibaca_at')
+                    ->latest('updated_at')
+                    ->limit(5)
+                    ->get()
+                    ->map(fn ($i) => [
+                        'id'          => $i->id,
+                        'status'      => $i->status_approval === 'approved' ? 'Disetujui' : 'Ditolak',
+                        'jenis'       => $i->status === 'sakit' ? 'Sakit' : 'Izin',
+                        'tgl_mulai'   => $i->tgl_mulai?->format('Y-m-d'),
+                        'tgl_selesai' => $i->tgl_selesai?->format('Y-m-d'),
+                        'catatan'     => $i->catatan_admin,
+                        'waktu'       => $i->updated_at?->diffForHumans(),
+                    ])
+                    ->values();
+            })() : [],
         ];
     }
 }
