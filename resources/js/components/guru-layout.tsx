@@ -18,7 +18,7 @@ import { FlashAlert } from "@/components/flash-alert";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const SCHOOL_LOGO = "/images/smkpbb.png";
-const SCHOOL_ABBR = "SIMAG";
+const SCHOOL_ABBR = "SIPRES";
 const SCHOOL_FULL = "SMK Pembangunan Bandung Barat";
 
 interface GuruLayoutProps {

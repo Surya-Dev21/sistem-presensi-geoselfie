@@ -107,7 +107,7 @@ export default function Dashboard({
 
     return (
         <GuruLayout title="Dashboard Guru">
-            <Head title="Dashboard Guru - Portal SIPRES GURU" />
+            <Head title="Dashboard Guru - Portal SIPRES Guru" />
 
             <div className="space-y-3.5">
                 {/* ===== HERO BANNER: Biru tua elegan + Aksen Putih ===== */}

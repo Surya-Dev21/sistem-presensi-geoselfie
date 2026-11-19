@@ -118,7 +118,7 @@ export default function Absensi({ absenHariIni = {} }) {
 
     return (
         <GuruLayout title="Presensi Harian">
-            <Head title="Presensi Geoselfie - Portal SIMAG" />
+            <Head title="Presensi Geoselfie - Portal SIPRES Guru" />
 
             <div className="max-w-5xl mx-auto space-y-3.5">
                 {/* HERO BANNER (selaras Dashboard) */}

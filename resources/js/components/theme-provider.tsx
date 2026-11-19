@@ -14,12 +14,16 @@ const ThemeContext = createContext<ThemeContextType>({
     setTheme: () => {},
 });
 
+const THEME_KEY = "sipres-theme";
+const LEGACY_THEME_KEY = "simag-theme";
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>("light");
 
     useEffect(() => {
         try {
-            const savedTheme = localStorage.getItem("simag-theme") as Theme | null;
+            const savedTheme = (localStorage.getItem(THEME_KEY) ??
+                localStorage.getItem(LEGACY_THEME_KEY)) as Theme | null;
             if (savedTheme === "dark" || savedTheme === "light") {
                 setThemeState(savedTheme);
                 applyTheme(savedTheme);
@@ -46,7 +50,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const setTheme = (newTheme: Theme) => {
         setThemeState(newTheme);
         try {
-            localStorage.setItem("simag-theme", newTheme);
+            localStorage.setItem(THEME_KEY, newTheme);
         } catch (e) {}
         applyTheme(newTheme);
     };

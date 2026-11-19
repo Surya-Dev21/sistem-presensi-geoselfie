@@ -116,7 +116,7 @@ export default function Profil({ pegawai }) {
 
     return (
         <GuruLayout title="Profil Saya">
-            <Head title="Profil Akun – Portal SIMAG" />
+            <Head title="Profil Akun – Portal SIPRES Guru" />
 
             <div className="max-w-2xl mx-auto space-y-4">
                 {/* PAGE HEADER */}
@@ -125,7 +125,7 @@ export default function Profil({ pegawai }) {
                         Pengaturan Profil &amp; Akun
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        Perbarui data pribadi, email, dan kata sandi akun SIMAG Anda.
+                        Perbarui data pribadi, email, dan kata sandi akun SIPRES Guru Anda.
                     </p>
                 </div>
 

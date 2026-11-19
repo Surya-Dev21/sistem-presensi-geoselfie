@@ -8,8 +8,8 @@ import { ThemeProvider } from "./components/theme-provider";
 // Cek apakah 'window' tersedia sebelum mengaksesnya agar aman saat SSR
 const appName =
     typeof window !== "undefined"
-        ? window.document.getElementsByTagName("title")[0]?.innerText || "SIMAG"
-        : "SIMAG";
+        ? window.document.getElementsByTagName("title")[0]?.innerText || "SIPRES Guru"
+        : "SIPRES Guru";
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
