@@ -1,67 +1,66 @@
 import React from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
+import { FiClock, FiFileText } from 'react-icons/fi';
+import AdminLayout from '@/components/admin-layout';
 
-export default function Dashboard({ totalPegawai, hadirHariIni, izinHariIni }) {
-    const handleLogout = (e) => {
-        e.preventDefault();
-        router.post('/logout');
-    };
+export default function Dashboard({ totalPegawai, hadirHariIni, izinHariIni, pendingIzin = 0 }) {
+    const kartu = [
+        {
+            label: 'Total Pegawai / Guru',
+            value: totalPegawai,
+            valueClass: 'text-slate-800 dark:text-white',
+        },
+        {
+            label: 'Hadir Hari Ini',
+            value: hadirHariIni,
+            valueClass: 'text-emerald-600 dark:text-emerald-400',
+        },
+        {
+            label: 'Izin / Sakit Hari Ini',
+            value: izinHariIni,
+            valueClass: 'text-blue-800 dark:text-blue-300',
+        },
+    ];
 
     return (
-        <div className="min-h-screen bg-gray-100 flex">
-            <Head title="Dashboard Admin - E-Absen" />
-            
-            {/* Sidebar Sederhana */}
-            <aside className="w-64 bg-slate-900 text-white hidden md:flex flex-col">
-                <div className="p-5 text-xl font-bold border-b border-slate-800">
-                    E-Absen Admin
-                </div>
-                <nav className="flex-1 p-4 space-y-2">
-                    <a href="/admin/dashboard" className="block px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium">
-                        Dashboard
-                    </a>
-                    <a href="#" className="block px-4 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition">
-                        Data Guru
-                    </a>
-                    <a href="#" className="block px-4 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 transition">
-                        Rekap Absensi
-                    </a>
-                </nav>
-                <div className="p-4 border-t border-slate-800">
-                    <button
-                        onClick={handleLogout}
-                        className="w-full py-2 px-4 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white rounded-lg transition text-sm font-medium"
+        <AdminLayout title="Dashboard Admin">
+            <Head title="Dashboard Admin - SIPRES Guru" />
+
+            <div>
+                <h2 className="text-lg font-black text-slate-800 dark:text-white">Dashboard Utama</h2>
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Ringkasan kehadiran dan pengajuan izin guru hari ini.
+                </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {kartu.map(({ label, value, valueClass }) => (
+                    <div
+                        key={label}
+                        className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs"
                     >
-                        Keluar Sistem
-                    </button>
-                </div>
-            </aside>
-
-            {/* Konten Utama */}
-            <main className="flex-1 flex flex-col min-w-0">
-                <header className="bg-white shadow-sm h-16 flex items-center justify-between px-6">
-                    <h1 className="text-lg font-semibold text-gray-800">Dashboard Utama</h1>
-                    <span className="text-sm text-gray-500">Administrator</span>
-                </header>
-
-                <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-                    {/* Kartu Statistik */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                            <p className="text-sm text-gray-500 font-medium">Total Pegawai / Guru</p>
-                            <h3 className="text-3xl font-bold text-gray-800 mt-2">{totalPegawai}</h3>
-                        </div>
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                            <p className="text-sm text-gray-500 font-medium">Hadir Hari Ini</p>
-                            <h3 className="text-3xl font-bold text-emerald-600 mt-2">{hadirHariIni}</h3>
-                        </div>
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                            <p className="text-sm text-gray-500 font-medium">Izin / Sakit Hari Ini</p>
-                            <h3 className="text-3xl font-bold text-amber-600 mt-2">{izinHariIni}</h3>
-                        </div>
+                        <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
+                            {label}
+                        </p>
+                        <p className={`text-2xl font-black mt-1.5 ${valueClass}`}>{value}</p>
                     </div>
-                </div>
-            </main>
-        </div>
+                ))}
+
+                <Link
+                    href="/admin/izin"
+                    className="bg-blue-900 hover:bg-blue-800 p-4 rounded-2xl border border-blue-800 shadow-xs transition-colors block"
+                >
+                    <p className="text-[10px] sm:text-xs text-blue-100 font-bold uppercase tracking-wider inline-flex items-center gap-1.5">
+                        <FiClock className="h-3.5 w-3.5" aria-hidden="true" />
+                        Menunggu Validasi
+                    </p>
+                    <p className="text-2xl font-black mt-1.5 text-white">{pendingIzin}</p>
+                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-blue-100">
+                        <FiFileText className="h-3 w-3" aria-hidden="true" />
+                        Tinjau pengajuan izin
+                    </span>
+                </Link>
+            </div>
+        </AdminLayout>
     );
 }

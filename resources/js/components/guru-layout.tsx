@@ -12,6 +12,7 @@ import {
     FiBell,
     FiSettings,
     FiCheckCircle,
+    FiXCircle,
     FiInfo,
 } from "react-icons/fi";
 import { FlashAlert } from "@/components/flash-alert";
@@ -52,7 +53,7 @@ function initials(nama?: string): string {
 }
 
 export default function GuruLayout({ children, title }: GuruLayoutProps) {
-    const { auth, url, statusAbsen } = usePage().props as {
+    const { auth, url, statusAbsen, notifikasiIzin } = usePage().props as {
         auth?: {
             user?: {
                 nama?: string;
@@ -66,6 +67,15 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
         };
         url?: string;
         statusAbsen?: { sudah_masuk?: boolean; sudah_pulang?: boolean } | null;
+        notifikasiIzin?: Array<{
+            id: number;
+            status: string;
+            jenis: string;
+            tgl_mulai: string | null;
+            tgl_selesai: string | null;
+            catatan: string | null;
+            waktu: string | null;
+        }>;
     };
 
     // State buka/tutup sidebar — di mobile (overlay drawer) & di desktop (collapse/expand)
@@ -109,10 +119,20 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
         { label: "Profil Saya",      href: "/profil",     Icon: FiUser,     active: path.startsWith("/profil") },
     ];
 
-    // Data notifikasi fungsional (status absen hari ini + pengingat sistem)
+    // Data notifikasi: keputusan izin dari admin + info status absen hari ini
+    const notifikasiIzinItems = (notifikasiIzin ?? []).map((n) => ({
+        id: `izin-${n.id}`,
+        title: `Pengajuan ${n.jenis} ${n.status}`,
+        desc: `${n.tgl_mulai ?? '-'} s/d ${n.tgl_selesai ?? '-'}${n.catatan ? " · " + n.catatan : ""}`,
+        time: n.waktu ?? "Baru saja",
+        type: n.status === "Disetujui" ? "success" : "danger",
+        href: "/izin" as string | null,
+    }));
+
     const notifications = [
+        ...notifikasiIzinItems,
         {
-            id: 1,
+            id: "absen",
             title: statusAbsen?.sudah_masuk
                 ? (statusAbsen?.sudah_pulang ? "Presensi Lengkap" : "Sudah Absen Masuk")
                 : "Belum Melakukan Absen Masuk",
@@ -121,13 +141,15 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                 : "Segera lakukan presensi geoselfie tepat waktu sesuai jadwal.",
             time: "Hari ini",
             type: statusAbsen?.sudah_masuk ? "success" : "info",
+            href: "/absensi" as string | null,
         },
         {
-            id: 2,
+            id: "pengingat",
             title: "Pengingat Jadwal",
             desc: "Pastikan perangkat mengaktifkan izin GPS akurat untuk validasi presensi.",
             time: "Sistem",
             type: "info",
+            href: null as string | null,
         },
     ];
 
@@ -252,8 +274,12 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                             aria-expanded={notifOpen}
                         >
                             <FiBell className="h-4.5 w-4.5" />
-                            {/* Titik indikator notifikasi aktif */}
-                            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-blue-600 ring-2 ring-white" />
+                            {/* Badge jumlah notifikasi keputusan izin yang belum dibaca */}
+                            {notifikasiIzin && notifikasiIzin.length > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-600 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+                                    {notifikasiIzin.length}
+                                </span>
+                            )}
                         </button>
 
                         {/* Dropdown Notifikasi */}
@@ -261,18 +287,45 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} aria-hidden="true" />
                                 <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-20 animate-in fade-in zoom-in-95 duration-150">
-                                    <div className="px-3.5 py-1.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                                    <div className="px-3.5 py-1.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2">
                                         <p className="text-xs font-bold text-slate-800 dark:text-white">Notifikasi</p>
-                                        <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
-                                            {notifications.length} Info
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {notifikasiIzin && notifikasiIzin.length > 0 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setNotifOpen(false);
+                                                        router.post("/izin/notifikasi-dibaca", {}, { preserveScroll: true });
+                                                    }}
+                                                    className="text-[10px] font-bold text-blue-700 dark:text-blue-300 hover:underline"
+                                                >
+                                                    Tandai dibaca
+                                                </button>
+                                            )}
+                                            <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+                                                {notifications.length} Info
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="divide-y divide-slate-100 dark:divide-slate-700 max-h-72 overflow-y-auto">
                                         {notifications.map((n) => (
-                                            <div key={n.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                            <button
+                                                key={n.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!n.href) return;
+                                                    setNotifOpen(false);
+                                                    router.visit(n.href);
+                                                }}
+                                                className={`w-full text-left p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${
+                                                    n.href ? "cursor-pointer" : "cursor-default"
+                                                }`}
+                                            >
                                                 <div className="flex items-start gap-2">
                                                     {n.type === "success" ? (
                                                         <FiCheckCircle className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                                    ) : n.type === "danger" ? (
+                                                        <FiXCircle className="h-4 w-4 text-rose-600 mt-0.5 flex-shrink-0" />
                                                     ) : (
                                                         <FiInfo className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
                                                     )}
@@ -288,7 +341,7 @@ export default function GuruLayout({ children, title }: GuruLayoutProps) {
                                                         </span>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </button>
                                         ))}
                                     </div>
                                 </div>

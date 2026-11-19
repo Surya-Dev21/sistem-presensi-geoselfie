@@ -55,7 +55,9 @@ Route::middleware(['auth:pegawai'])->group(function () {
 
     // 4. Izin
     Route::get('/izin', [IzinController::class, 'create'])->name('izin.create');
-    Route::post('/izin', [IzinController::class, 'store'])->name('izin.store'); 
+    Route::post('/izin', [IzinController::class, 'store'])->name('izin.store');
+    Route::post('/izin/notifikasi-dibaca', [IzinController::class, 'tandaiDibaca'])->name('izin.notifikasi.dibaca');
+    Route::delete('/izin/{izin}', [IzinController::class, 'destroy'])->name('izin.destroy');
 
     // 5. Profil
     Route::get('/profil', [ProfilController::class, 'edit'])->name('profil.edit');
@@ -65,4 +67,6 @@ Route::middleware(['auth:pegawai'])->group(function () {
 // Rute Khusus Admin
 Route::middleware(['auth:admin'])->prefix('admin')->group(function () { 
     Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/izin', [AdminController::class, 'izinIndex'])->name('admin.izin.index');
+    Route::patch('/izin/{izin}', [AdminController::class, 'izinUpdate'])->name('admin.izin.update');
 });

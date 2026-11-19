@@ -103,7 +103,7 @@ class AbsensiController extends Controller
             ->get();
 
         $izin = Izin::where('nip', $pegawai->nip)
-            ->where('status_approval', '!=', 'rejected')
+            ->where('status_approval', 'approved')
             ->whereDate('tgl_mulai', '<=', $akhir->toDateString())
             ->whereDate('tgl_selesai', '>=', $awal->toDateString())
             ->get();

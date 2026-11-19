@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Izin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -16,15 +17,19 @@ class IzinController extends Controller
         $pegawai = Auth::guard('pegawai')->user();
 
         $riwayatIzin = Izin::where('nip', $pegawai->nip)
-            ->orderByDesc('tgl_mulai')
+            ->orderByDesc('created_at')
             ->limit(10)
             ->get()
             ->map(fn ($i) => [
-                'jenis_izin'  => ucfirst($i->status),  // Izin / Sakit
-                'tgl_mulai'   => $i->tgl_mulai?->format('Y-m-d'),
-                'tgl_selesai' => $i->tgl_selesai?->format('Y-m-d'),
-                'alasan'      => $i->keterangan,
-                'status'      => match ($i->status_approval) {
+                'id'            => $i->id,
+                'jenis_izin'    => ucfirst($i->status),  // Izin / Sakit
+                'tgl_mulai'     => $i->tgl_mulai?->format('Y-m-d'),
+                'tgl_selesai'   => $i->tgl_selesai?->format('Y-m-d'),
+                'alasan'        => $i->keterangan,
+                'catatan_admin' => $i->catatan_admin,
+                'bukti_url'     => $i->bukti_file ? Storage::disk('public')->url($i->bukti_file) : null,
+                'diajukan'      => $i->created_at?->diffForHumans(),
+                'status'        => match ($i->status_approval) {
                     'approved' => 'Disetujui',
                     'rejected' => 'Ditolak',
                     default    => 'Menunggu',
@@ -74,5 +79,40 @@ class IzinController extends Controller
 
         return redirect()->route('izin.create')
             ->with('success', 'Permohonan ' . $validated['jenis_izin'] . ' berhasil dikirim dan menunggu persetujuan.');
+    }
+
+    // Batalkan pengajuan yang masih menunggu validasi (milik sendiri)
+    public function destroy(Izin $izin)
+    {
+        $pegawai = Auth::guard('pegawai')->user();
+
+        if ($izin->nip !== $pegawai->nip) {
+            abort(403, 'Pengajuan ini bukan milik Anda.');
+        }
+
+        if ($izin->status_approval !== 'pending') {
+            return back()->with('error', 'Pengajuan yang sudah diproses tidak dapat dibatalkan.');
+        }
+
+        if ($izin->bukti_file) {
+            Storage::disk('public')->delete($izin->bukti_file);
+        }
+
+        $izin->delete();
+
+        return back()->with('success', 'Pengajuan izin berhasil dibatalkan.');
+    }
+
+    // Tandai semua notifikasi keputusan izin sudah dibaca
+    public function tandaiDibaca()
+    {
+        $pegawai = Auth::guard('pegawai')->user();
+
+        Izin::where('nip', $pegawai->nip)
+            ->whereIn('status_approval', ['approved', 'rejected'])
+            ->whereNull('dibaca_at')
+            ->update(['dibaca_at' => now('Asia/Jakarta')]);
+
+        return back();
     }
 }
