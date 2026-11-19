@@ -36,7 +36,7 @@ export default function Izin({ riwayatIzin = [] }) {
             <div className="space-y-6">
                 <div>
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                        Permohonan Izin & Cuti
+                        Permohonan Izin &amp; Sakit
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
                         Kirimkan permohonan izin tidak masuk atau cuti kerja beserta dokumen pendukung.
@@ -48,7 +48,7 @@ export default function Izin({ riwayatIzin = [] }) {
                     <Card className="rounded-3xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
                         <CardHeader className="p-6 pb-2">
                             <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                                <FiFileText className="text-amber-500" />
+                                <FiFileText className="text-blue-700 dark:text-blue-300" />
                                 Formulir Permohonan Izin
                             </CardTitle>
                         </CardHeader>
@@ -66,7 +66,6 @@ export default function Izin({ riwayatIzin = [] }) {
                                     >
                                         <option value="Izin">Izin (Urusan Mendesak)</option>
                                         <option value="Sakit">Sakit</option>
-                                        <option value="Cuti">Cuti Tahunan / Melahirkan</option>
                                     </select>
                                     {errors.jenis_izin && <p className="text-xs text-rose-500 mt-1">{errors.jenis_izin}</p>}
                                 </div>
@@ -137,7 +136,7 @@ export default function Izin({ riwayatIzin = [] }) {
                                 <Button
                                     type="submit"
                                     disabled={processing}
-                                    className="w-full py-3 h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm shadow-md shadow-blue-600/20 transition flex justify-center items-center gap-2 active:scale-98 disabled:opacity-60"
+                                    className="w-full py-3 h-12 bg-blue-800 hover:bg-blue-900 text-white font-bold rounded-xl text-sm shadow-xs transition flex justify-center items-center gap-2 active:scale-98 disabled:opacity-60"
                                 >
                                     <FiSend className="h-4 w-4" />
                                     <span>Kirim Permohonan Izin</span>
@@ -162,10 +161,10 @@ export default function Izin({ riwayatIzin = [] }) {
                                         <div key={index} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 space-y-2">
                                             <div className="flex justify-between items-center">
                                                 <span className="font-bold text-sm text-slate-800 dark:text-slate-100">{item.jenis_izin}</span>
-                                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                                                    item.status === 'Disetujui' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' :
-                                                    item.status === 'Ditolak' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' :
-                                                    'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                                                    item.status === 'Disetujui' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-900' :
+                                                    item.status === 'Ditolak' ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-900' :
+                                                    'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                                                 }`}>
                                                     {item.status}
                                                 </span>

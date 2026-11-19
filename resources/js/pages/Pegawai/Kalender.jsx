@@ -1,8 +1,56 @@
 import React from 'react';
 import { Head, router } from '@inertiajs/react';
-import { FiCheckCircle, FiFileText, FiClock } from 'react-icons/fi';
+import {
+    FiCheckCircle,
+    FiFileText,
+    FiThermometer,
+    FiXCircle,
+    FiCalendar,
+    FiRefreshCw,
+} from 'react-icons/fi';
 import GuruLayout from '@/components/guru-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+// ============================================================
+// Palet status (satu sumber kebenaran)
+// Hadir = hijau · Izin = biru · Sakit = kuning · Alpa = merah
+// ============================================================
+const STATUS = {
+    Hadir: {
+        label: 'Hadir',
+        card: 'border-emerald-200 dark:border-emerald-900',
+        iconBg: 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300',
+        value: 'text-emerald-700 dark:text-emerald-400',
+        badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-900',
+        dot: 'bg-emerald-500',
+    },
+    Izin: {
+        label: 'Izin',
+        card: 'border-blue-200 dark:border-blue-900',
+        iconBg: 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300',
+        value: 'text-blue-700 dark:text-blue-300',
+        badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-900',
+        dot: 'bg-blue-500',
+    },
+    Sakit: {
+        label: 'Sakit',
+        card: 'border-yellow-200 dark:border-yellow-900',
+        iconBg: 'bg-yellow-50 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-300',
+        value: 'text-yellow-700 dark:text-yellow-300',
+        badge: 'bg-yellow-50 text-yellow-800 border-yellow-300 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-900',
+        dot: 'bg-yellow-400',
+    },
+    Alpa: {
+        label: 'Alpa',
+        card: 'border-rose-200 dark:border-rose-900',
+        iconBg: 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300',
+        value: 'text-rose-700 dark:text-rose-400',
+        badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-900',
+        dot: 'bg-rose-500',
+    },
+};
+
+const statusStyle = (status) => STATUS[status] ?? STATUS.Hadir;
 
 const fmtTanggal = (nilai) => {
     if (!nilai) return '-';
@@ -18,201 +66,258 @@ const fmtTanggal = (nilai) => {
 
 const fmtJam = (nilai) => (nilai ? `${`${nilai}`.substring(0, 5)} WIB` : null);
 
-const statusStyle = (status) => {
-    switch (status) {
-        case 'Hadir':
-        case 'Tepat Waktu':
-            return 'bg-blue-50 dark:bg-blue-950 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-900';
-        case 'Izin':
-        case 'Sakit':
-            return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700';
-        default:
-            return 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900';
-    }
-};
+function StatusBadge({ status, withDot = false }) {
+    const s = statusStyle(status);
+    return (
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${s.badge}`}>
+            {withDot && <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden="true" />}
+            {s.label}
+        </span>
+    );
+}
 
-export default function RiwayatPresensi({ riwayat = [], statistik = { hadir: 0, izin_sakit: 0, alpa: 0 }, filter = {} }) {
-    // Fungsi untuk handle perubahan filter bulan/tahun
+function EmptyState() {
+    return (
+        <div className="py-10 px-4 text-center">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400">
+                <FiCalendar className="h-5 w-5" />
+            </div>
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                Belum ada data presensi pada periode ini.
+            </p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                Coba ganti bulan atau tahun.
+            </p>
+        </div>
+    );
+}
+
+const BULAN = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+];
+
+const TAHUN = ['2025', '2026', '2027'];
+
+export default function RiwayatPresensi({
+    riwayat = [],
+    statistik = { hadir: 0, izin: 0, sakit: 0, alpa: 0 },
+    filter = {},
+}) {
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
-        router.get('/kalender', {
-            ...filter,
-            [name]: value
-        }, { preserveState: true, replace: true });
+        router.get('/kalender', { ...filter, [name]: value }, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
     };
+
+    const resetFilter = () => {
+        router.get('/kalender', {}, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
+    const kartu = [
+        { key: 'hadir', status: 'Hadir', Icon: FiCheckCircle },
+        { key: 'izin', status: 'Izin', Icon: FiFileText },
+        { key: 'sakit', status: 'Sakit', Icon: FiThermometer },
+        { key: 'alpa', status: 'Alpa', Icon: FiXCircle },
+    ];
+
+    const selectClass =
+        'h-9 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:border-blue-800 dark:focus:border-blue-400 focus:ring-0 outline-none transition';
 
     return (
         <GuruLayout title="Riwayat Presensi">
             <Head title="Riwayat Presensi - Portal SIMAG" />
 
-            <div className="space-y-6">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                        Rekapitulasi Kehadiran
-                    </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        Pantau riwayat presensi masuk, pulang, serta status kehadiran harian Anda.
+            <div className="max-w-5xl mx-auto space-y-3.5">
+                {/* HEADER + LEGENDA */}
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+                    <div>
+                        <h2 className="text-lg sm:text-xl font-black text-slate-800 dark:text-white">
+                            Riwayat Presensi
+                        </h2>
+                        <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Rekap kehadiran, izin, dan sakit Anda per bulan.
+                        </p>
+                    </div>
+
+                    <ul className="flex flex-wrap items-center gap-2.5" aria-label="Legenda status kehadiran">
+                        {Object.values(STATUS).map((s) => (
+                            <li key={s.label} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                                <span className={`h-2 w-2 rounded-full ${s.dot}`} aria-hidden="true" />
+                                {s.label}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                {/* KARTU STATISTIK: 4 status terpisah */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {kartu.map(({ key, status, Icon }) => {
+                        const s = STATUS[status];
+                        return (
+                            <div
+                                key={key}
+                                className={`bg-white dark:bg-slate-900 rounded-2xl p-3.5 border ${s.card} shadow-xs flex items-center gap-3`}
+                            >
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${s.iconBg}`}>
+                                    <Icon aria-hidden="true" />
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
+                                        {s.label}
+                                    </p>
+                                    <p className={`text-lg font-black leading-tight ${s.value}`}>
+                                        {statistik?.[key] ?? 0}{' '}
+                                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Hari</span>
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* FILTER PERIODE */}
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-2.5">
+                        <div className="flex-1">
+                            <label htmlFor="filter-bulan" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                Bulan
+                            </label>
+                            <select
+                                id="filter-bulan"
+                                name="bulan"
+                                aria-label="Filter bulan"
+                                value={filter?.bulan ?? ''}
+                                onChange={handleFilterChange}
+                                className={`${selectClass} w-full`}
+                            >
+                                {BULAN.map((nama, i) => (
+                                    <option key={nama} value={String(i + 1)}>{nama}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="flex-1">
+                            <label htmlFor="filter-tahun" className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                Tahun
+                            </label>
+                            <select
+                                id="filter-tahun"
+                                name="tahun"
+                                aria-label="Filter tahun"
+                                value={filter?.tahun ?? ''}
+                                onChange={handleFilterChange}
+                                className={`${selectClass} w-full`}
+                            >
+                                {TAHUN.map((t) => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={resetFilter}
+                            className="h-9 px-3 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition inline-flex items-center justify-center gap-1.5"
+                        >
+                            <FiRefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                            Reset
+                        </button>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2" aria-live="polite">
+                        Menampilkan {riwayat.length} baris pada periode ini.
                     </p>
                 </div>
 
-                {/* 1. STATISTIK CARDS */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-blue-100 dark:border-blue-900/60 shadow-xs flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-800 dark:text-blue-300 flex items-center justify-center text-xl">
-                            <FiCheckCircle />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Hadir</p>
-                            <h3 className="text-xl font-black text-blue-900 dark:text-blue-300">
-                                {statistik.hadir} <span className="text-xs font-medium text-blue-700 dark:text-blue-400">Hari</span>
-                            </h3>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xl">
-                            <FiFileText />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Izin / Sakit</p>
-                            <h3 className="text-xl font-black text-slate-700 dark:text-slate-200">
-                                {statistik.izin_sakit} <span className="text-xs font-medium text-slate-500">Hari</span>
-                            </h3>
-                        </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-rose-100 dark:border-rose-900/60 shadow-xs flex items-center gap-3.5">
-                        <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center text-xl">
-                            <FiClock />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Alpa</p>
-                            <h3 className="text-xl font-black text-rose-700 dark:text-rose-400">
-                                {statistik.alpa} <span className="text-xs font-medium text-rose-600 dark:text-rose-500">Hari</span>
-                            </h3>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 2. FILTER BULAN & TAHUN */}
-                <Card className="rounded-3xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
-                    <CardHeader className="p-6 pb-2">
-                        <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">
-                            Filter Periode
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-6 pt-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                                    Bulan
-                                </label>
-                                <select 
-                                    name="bulan" 
-                                    value={filter?.bulan || ''} 
-                                    onChange={handleFilterChange}
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-600 transition"
-                                >
-                                    <option value="1">Januari</option>
-                                    <option value="2">Februari</option>
-                                    <option value="3">Maret</option>
-                                    <option value="4">April</option>
-                                    <option value="5">Mei</option>
-                                    <option value="6">Juni</option>
-                                    <option value="7">Juli</option>
-                                    <option value="8">Agustus</option>
-                                    <option value="9">September</option>
-                                    <option value="10">Oktober</option>
-                                    <option value="11">November</option>
-                                    <option value="12">Desember</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                                    Tahun
-                                </label>
-                                <select 
-                                    name="tahun" 
-                                    value={filter?.tahun || ''} 
-                                    onChange={handleFilterChange}
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:outline-none focus:border-blue-600 transition"
-                                >
-                                    <option value="2025">2025</option>
-                                    <option value="2026">2026</option>
-                                    <option value="2027">2027</option>
-                                </select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* 3. TABEL RIWAYAT */}
-                <Card className="rounded-3xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
-                    <CardHeader className="p-6 pb-2">
-                        <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-100">
+                {/* DAFTAR RIWAYAT */}
+                <Card className="rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden">
+                    <CardHeader className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800">
+                        <CardTitle className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white">
                             Daftar Presensi Harian
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-slate-50 dark:bg-slate-800/60 border-y border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        <th className="py-3 px-4">Tanggal</th>
-                                        <th className="py-3 px-4">Jam Masuk</th>
-                                        <th className="py-3 px-4">Jam Pulang</th>
-                                        <th className="py-3 px-4">Status Kehadiran</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-                                    {riwayat.length > 0 ? (
-                                        riwayat.map((item, index) => {
-                                            const jamMasuk = fmtJam(item.jam_masuk);
-                                            const jamKeluar = fmtJam(item.jam_keluar ?? item.jam_pulang);
-                                            const status = item.status || 'Hadir';
 
-                                            return (
-                                                <tr key={item.id ?? index} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-                                                    <td className="py-3.5 px-4 font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                                                        {fmtTanggal(item.tgl_absen ?? item.tanggal)}
-                                                    </td>
-                                                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-xs">
-                                                        {jamMasuk ? (
-                                                            <span className="text-blue-800 dark:text-blue-200 font-bold bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-900">
-                                                                {jamMasuk}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-slate-400">-</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-3.5 px-4 text-slate-600 dark:text-slate-400 font-mono text-xs">
-                                                        {jamKeluar ? (
-                                                            <span className="text-blue-700 dark:text-blue-300 font-bold bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-900">
-                                                                {jamKeluar}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-slate-400">-</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-3.5 px-4">
-                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${statusStyle(status)}`}>
-                                                            {status}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    ) : (
-                                        <tr>
-                                            <td colSpan="4" className="py-12 text-center text-slate-400 dark:text-slate-500 text-xs">
-                                                Belum ada data presensi pada periode yang dipilih.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                    <CardContent className="p-0">
+                        {riwayat.length === 0 ? (
+                            <EmptyState />
+                        ) : (
+                            <>
+                                {/* DESKTOP: tabel */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                                <th scope="col" className="py-3 px-4">Tanggal</th>
+                                                <th scope="col" className="py-3 px-4">Jam Masuk</th>
+                                                <th scope="col" className="py-3 px-4">Jam Pulang</th>
+                                                <th scope="col" className="py-3 px-4">Status</th>
+                                                <th scope="col" className="py-3 px-4 hidden lg:table-cell">Keterangan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {riwayat.map((item) => {
+                                                const jamMasuk = fmtJam(item.jam_masuk);
+                                                const jamKeluar = fmtJam(item.jam_keluar ?? item.jam_pulang);
+
+                                                return (
+                                                    <tr key={item.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                                                        <td className="py-3 px-4 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                                            {fmtTanggal(item.tgl_absen ?? item.tanggal)}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-xs font-mono text-slate-600 dark:text-slate-400">
+                                                            {jamMasuk ?? <span className="text-slate-400">—</span>}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-xs font-mono text-slate-600 dark:text-slate-400">
+                                                            {jamKeluar ?? <span className="text-slate-400">—</span>}
+                                                        </td>
+                                                        <td className="py-3 px-4">
+                                                            <StatusBadge status={item.status} />
+                                                        </td>
+                                                        <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400 max-w-[220px] truncate hidden lg:table-cell">
+                                                            {item.keterangan || <span className="text-slate-400">—</span>}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* MOBILE: kartu */}
+                                <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                                    {riwayat.map((item) => (
+                                        <div key={item.id} className="p-3.5 space-y-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                                                    {fmtTanggal(item.tgl_absen ?? item.tanggal)}
+                                                </p>
+                                                <StatusBadge status={item.status} withDot />
+                                            </div>
+                                            <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-300">
+                                                <span className="inline-flex items-center gap-1">
+                                                    <FiCalendar className="h-3 w-3 text-slate-400" aria-hidden="true" />
+                                                    Masuk: {fmtJam(item.jam_masuk) ?? '—'}
+                                                </span>
+                                                <span>Pulang: {fmtJam(item.jam_keluar ?? item.jam_pulang) ?? '—'}</span>
+                                            </div>
+                                            {item.keterangan && (
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                                                    {item.keterangan}
+                                                </p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
             </div>
