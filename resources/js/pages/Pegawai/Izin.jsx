@@ -31,7 +31,7 @@ export default function Izin({ riwayatIzin = [] }) {
 
     return (
         <GuruLayout title="Pengajuan Izin">
-            <Head title="Pengajuan Izin - Portal SIMAG" />
+            <Head title="Pengajuan Izin - Portal SIPRES Guru" />
 
             <div className="space-y-6">
                 <div>

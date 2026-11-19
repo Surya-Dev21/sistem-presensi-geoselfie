@@ -133,7 +133,7 @@ export default function RiwayatPresensi({
 
     return (
         <GuruLayout title="Riwayat Presensi">
-            <Head title="Riwayat Presensi - Portal SIMAG" />
+            <Head title="Riwayat Presensi - Portal SIPRES Guru" />
 
             <div className="max-w-5xl mx-auto space-y-3.5">
                 {/* HEADER + LEGENDA */}
