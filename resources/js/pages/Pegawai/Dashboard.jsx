@@ -107,14 +107,14 @@ export default function Dashboard({
 
     return (
         <GuruLayout title="Dashboard Guru">
-            <Head title="Dashboard Guru - Portal SIMAG" />
+            <Head title="Dashboard Guru - Portal SIPRES GURU" />
 
             <div className="space-y-3.5">
-                {/* ===== HERO BANNER: Biru tua elegan + Aksen Putih (Bebas Kuning) ===== */}
+                {/* ===== HERO BANNER: Biru tua elegan + Aksen Putih ===== */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white p-4.5 sm:p-5 shadow-sm border border-blue-800">
                     <div className="relative z-10 max-w-2xl space-y-1">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold bg-white/15 text-blue-100">
-                            Sistem Informasi Manajemen Guru
+                            Sistem Informasi Presensi Guru
                         </span>
                         <h2 className="text-base sm:text-lg font-black tracking-tight text-white leading-tight">
                             Selamat Datang, {sapaan}!
