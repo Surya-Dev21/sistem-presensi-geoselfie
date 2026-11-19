@@ -23,6 +23,7 @@ class Pegawai extends Authenticatable
         'jenis_kelamin',
         'no_hp',
         'email',
+        'foto',
         'password',
     ];
 
