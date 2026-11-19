@@ -11,12 +11,17 @@ class Izin extends Model
     protected $table = 'izin';
     protected $fillable = [
         'nip',
-        'tanggal_mulai',
-        'tanggal_selesai',
+        'tgl_mulai',
+        'tgl_selesai',
         'status',
         'keterangan',
         'bukti_file',
         'status_approval',
+    ];
+
+    protected $casts = [
+        'tgl_mulai'   => 'date:Y-m-d',
+        'tgl_selesai' => 'date:Y-m-d',
     ];
 
 }

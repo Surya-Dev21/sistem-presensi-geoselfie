@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Absensi;
+use App\Models\Izin;
 use App\Models\JadwalMengajar;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -91,40 +92,75 @@ class AbsensiController extends Controller
     {
         $pegawai = Auth::guard('pegawai')->user();
 
-        $bulan = $request->input('bulan', date('m'));
-        $tahun = $request->input('tahun', date('Y'));
+        $bulan = (int) $request->input('bulan', now('Asia/Jakarta')->month);
+        $tahun = (int) $request->input('tahun', now('Asia/Jakarta')->year);
 
-        $riwayat = Absensi::where('nip', $pegawai->nip)
-            ->whereMonth('tgl_absen', $bulan)
-            ->whereYear('tgl_absen', $tahun)
-            ->orderBy('tgl_absen', 'desc')
+        $awal  = Carbon::create($tahun, $bulan, 1)->startOfMonth();
+        $akhir = $awal->copy()->endOfMonth();
+
+        $absensi = Absensi::where('nip', $pegawai->nip)
+            ->whereBetween('tgl_absen', [$awal->toDateString(), $akhir->toDateString()])
             ->get();
 
-        $totalHadir = $riwayat->where('status', 'Hadir')->count();
-        $totalIzinSakit = $riwayat->whereIn('status', ['Izin', 'Sakit'])->count();
-        $totalAlpa = $riwayat->where('status', 'Alpa')->count();
+        $izin = Izin::where('nip', $pegawai->nip)
+            ->where('status_approval', '!=', 'rejected')
+            ->whereDate('tgl_mulai', '<=', $akhir->toDateString())
+            ->whereDate('tgl_selesai', '>=', $awal->toDateString())
+            ->get();
 
-        // Normalisasi field agar tidak mismatch dengan tabel di Kalender.jsx
-        $riwayat = $riwayat->map(fn ($a) => [
-            'id'         => $a->id,
-            'tgl_absen'  => $a->tgl_absen,
-            'jam_masuk'  => $a->jam_masuk,
-            'jam_keluar' => $a->jam_keluar,
-            'status'     => $a->status ?: 'Hadir',
-            'location_in'  => $a->location_in,
-            'location_out' => $a->location_out,
-        ])->values();
+        $baris = [];
+
+        // 1) Absensi menang atas izin pada tanggal yang sama
+        foreach ($absensi as $a) {
+            $baris[$a->tgl_absen] = [
+                'id'         => $a->id,
+                'tgl_absen'  => $a->tgl_absen,
+                'jam_masuk'  => $a->jam_masuk,
+                'jam_keluar' => $a->jam_keluar,
+                'status'     => $a->status ?: 'Hadir',
+                'keterangan' => null,
+                'sumber'     => 'absensi',
+            ];
+        }
+
+        // 2) Sebar rentang izin/sakit menjadi satu baris per tanggal
+        foreach ($izin as $i) {
+            $tgl = Carbon::parse($i->tgl_mulai)->startOfDay();
+            $selesai = Carbon::parse($i->tgl_selesai)->startOfDay();
+
+            while ($tgl->lte($selesai)) {
+                $kunci = $tgl->toDateString();
+
+                if ($tgl->betweenIncluded($awal, $akhir) && !isset($baris[$kunci])) {
+                    $baris[$kunci] = [
+                        'id'         => 'izin-' . $i->id . '-' . $kunci,
+                        'tgl_absen'  => $kunci,
+                        'jam_masuk'  => null,
+                        'jam_keluar' => null,
+                        'status'     => $i->status === 'sakit' ? 'Sakit' : 'Izin',
+                        'keterangan' => $i->keterangan,
+                        'sumber'     => 'izin',
+                    ];
+                }
+
+                $tgl->addDay();
+            }
+        }
+
+        krsort($baris);
+        $riwayat = collect(array_values($baris));
 
         return Inertia::render('Pegawai/Kalender', [
             'riwayat'   => $riwayat,
             'statistik' => [
-                'hadir'      => $totalHadir,
-                'izin_sakit' => $totalIzinSakit,
-                'alpa'       => $totalAlpa,
+                'hadir' => $riwayat->where('status', 'Hadir')->count(),
+                'izin'  => $riwayat->where('status', 'Izin')->count(),
+                'sakit' => $riwayat->where('status', 'Sakit')->count(),
+                'alpa'  => $riwayat->where('status', 'Alpa')->count(),
             ],
             'filter'    => [
-                'bulan' => $bulan,
-                'tahun' => $tahun,
+                'bulan' => (string) $bulan,
+                'tahun' => (string) $tahun,
             ]
         ]);
     }

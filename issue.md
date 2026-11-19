@@ -1,313 +1,601 @@
-# Rencana Implementasi: Peningkatan Menu Presensi Harian (Geoselfie, Peta Visual & Riwayat)
+# Rencana Implementasi: Peningkatan UI/UX Riwayat Presensi + Izin/Sakit Masuk Riwayat
 
-Dokumen ini adalah panduan teknis langkah-demi-langkah yang dirancang secara detail, terstruktur, dan presisi agar dapat dieksekusi dengan mudah dan aman oleh **Junior Programmer** maupun **AI Model**.
-
----
-
-## 🎯 Sasaran & Kebutuhan Fitur (Requirements)
-
-1. **Bebaskan Kunci Radius (Un-lock Radius):**
-   - Saat ini presensi terkunci jika jarak > 100 meter dari sekolah (`disabled={!lokasiAkurat}`).
-   - **Kebutuhan:** Hilangkan batasan pemblokiran radius. Guru dapat mengirim presensi dari mana saja (mode radius bebas/pengujian), namun data koordinat GPS dan jarak tetap dicatat ke database sebagai data rekam jejak.
-2. **Sematkan Gambar/Tampilan Peta Interaktif (Maps View):**
-   - Tampilkan peta visual lokasi koordinat guru secara *real-time* tepat di halaman presensi (bukan sekadar angka latitude & longitude).
-   - Menggunakan OpenStreetMap (OSM) Embed via `iframe` (100% gratis, tanpa API Key Google yang rumit, bebas biaya kuota, dan langsung berfungsi).
-   - Sertakan tombol pintasan *"Buka di Google Maps"* untuk mempermudah pengecekan titik di aplikasi peta eksternal.
-3. **Selaraskan Tampilan dengan Halaman Dashboard:**
-   - Gunakan palet warna resmi SIMAG: **Biru Tua (`#1e3a8a` / `blue-900`)**, aksen putih bersih, border slate yang rapi, dan hindari warna kuning mencolok.
-   - Desain kartu, header hero, typography, serta tombol mengikuti standar komponen di `Dashboard.jsx`.
-4. **Sinkronisasi Data ke Riwayat Presensi (Untuk Laporan):**
-   - Setiap presensi (Masuk & Pulang) yang berhasil dikirim **wajib langsung muncul** di halaman Riwayat Presensi (`/kalender`).
-   - Perbaiki ketidakcocokan (mismatch) penamaan kolom antara database (`tgl_absen`, `jam_masuk`, `jam_keluar`) dan tabel tampilan di `Kalender.jsx`.
-5. **Tampilan Responsif & Ramah Pengguna (User-Friendly & Mobile-First):**
-   - Tampilan adaptif:
-     - **Layar Smartphone / HP (< 768px):** Tata letak satu kolom vertikal yang ergonomis.
-     - **Layar Desktop / Laptop (≥ 768px):** Tata letak dua kolom seimbang (Kamera Swafoto di sisi kiri, Peta Lokasi & Form Submit di sisi kanan).
-   - Pilihan tipe absen (Masuk / Pulang) yang cerdas dan otomatis mendeteksi status presensi hari ini.
+Dokumen ini adalah panduan teknis langkah-demi-langkah untuk **junior programmer** atau **AI model** yang mengeksekusi. Ikuti urutannya, jangan melompati tahap verifikasi.
 
 ---
 
-## 📂 Berkas yang Dimodifikasi (File Overview)
+## 🎯 Sasaran
 
-| File | Tipe | Peran & Tanggung Jawab |
-|---|---|---|
-| `resources/js/pages/Pegawai/Absensi.jsx` | Frontend (React/Inertia) | Halaman utama presensi harian: Kamera webcam, integrasi OpenStreetMap, logika radius bebas, dan tombol submit. |
-| `resources/js/pages/Pegawai/Kalender.jsx` | Frontend (React/Inertia) | Halaman riwayat presensi: Memperbaiki mapping data field tabel agar data absen langsung tampil tanpa bug. |
-| `app/Http/Controllers/AbsensiController.php` | Backend (Laravel) | Mengelola logika penyimpanan foto & koordinat (`store`), serta penyediaan data riwayat presensi (`index`). |
-
----
-
-## 🛠️ Langkah-Langkah Pengerjaan Teknis (Step-by-Step)
-
-### TAHAP 1: Bebaskan Kunci Radius di `Absensi.jsx`
-
-#### 1.1 Masalah Saat Ini
-Pada berkas `resources/js/pages/Pegawai/Absensi.jsx`, tombol submit presensi terkunci dengan kondisi:
-```javascript
-disabled={!lokasiAkurat || !fotoUri || processing}
-```
-Variabel `lokasiAkurat` bernilai `false` jika jarak melebihi 100 meter, sehingga memunculkan peringatan merah dan tombol tidak bisa diklik.
-
-#### 1.2 Solusi Perubahan
-1. **Ubah Status Validasi Radius:**
-   - Jangan jadikan `lokasiAkurat` sebagai syarat mutlak untuk mendisable tombol submit.
-   - Syarat tombol submit aktif cukup:
-     1. Koordinat GPS berhasil terbaca (`data.latitude && data.longitude`).
-     2. Swafoto/selfie sudah diambil (`fotoUri`).
-     3. Form tidak sedang dalam proses kirim (`!processing`).
-2. **Ubah Teks Indikator Lokasi:**
-   - Ubah kotak status lokasi dari peringatan kesalahan (*error red*) menjadi informasi informatif (*info badge*).
-   - Tampilkan pesan: *"Titik GPS Terkunci (Radius Bebas / Mode Uji Coba)"* beserta jarak estimasi dari sekolah.
+1. **Perbaiki UI/UX halaman Riwayat Presensi (`/kalender`)**: responsif (mobile-first), rapi, enak dibaca, konsisten dengan Dashboard.
+2. **Warna status**: **Hadir = hijau**, **Izin = biru**, **Sakit = kuning**, **Alpa = merah**.
+3. **Izin dan Sakit dipisah** — jangan digabung jadi satu kartu "Izin / Sakit".
+4. **Pengajuan Izin/Sakit guru ikut tampil di Riwayat Presensi** per tanggal (bukan hanya di halaman `/izin`).
 
 ---
 
-### TAHAP 2: Implementasi Peta Visual (OpenStreetMap Embed)
+## 🧭 Kondisi Kode Saat Ini (hasil audit — jangan diabaikan)
 
-#### 2.1 Mengapa Memilih OpenStreetMap Iframe?
-- **Zero Configuration:** Tidak membutuhkan Google Maps API Key atau setup billing kartu kredit.
-- **Ringan & Cepat:** Menggunakan standard iframe resmi OpenStreetMap.
-- **Marker Otomatis:** Menampilkan pin penanda tepat di posisi latitude dan longitude guru.
+| Berkas | Kondisi nyata |
+|---|---|
+| `resources/js/pages/Pegawai/Kalender.jsx` | Hanya tabel desktop (`overflow-x-auto`), belum ada layout kartu mobile. 3 kartu statistik: Hadir (biru), **Izin / Sakit (digabung, slate)**, Alpa (rose). Warna Hadir masih biru, belum hijau. |
+| `app/Http/Controllers/AbsensiController.php@index` | Hanya mengambil tabel `absensi`. Tabel `izin` **tidak** ikut dibaca. Statistik hanya `hadir`, `izin_sakit`, `alpa`. |
+| `app/Models/Izin.php` | `$fillable` **SALAH**: memakai `tanggal_mulai`, `tanggal_selesai`, `status`, `keterangan`, `bukti_file`, `status_approval` — padahal kolom DB: `tgl_mulai`, `tgl_selesai`, `status`, `keterangan`, `bukti_file`, `status_approval`. Yang salah hanya dua nama tanggal. |
+| `app/Http/Controllers/IzinController.php@store` | **KOSONG** (tidak menyimpan apa pun). `create()` juga tidak mengirim `riwayatIzin`, jadi kartu riwayat di `/izin` selalu kosong. |
+| `resources/js/pages/Pegawai/Izin.jsx` | Form mengirim `jenis_izin`, `tgl_mulai`, `tgl_selesai`, `alasan`, `dokumen`. Enum DB `status` = `['izin','sakit']`, `status_approval` = `['pending','approved','rejected']`. |
 
-#### 2.2 Spesifikasi Komponen Peta
-Letakkan elemen peta di samping atau di bawah kamera swafoto:
-
-```jsx
-{/* Komponen Preview Peta Interaktif */}
-<div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 relative h-48 sm:h-56">
-    {data.latitude && data.longitude ? (
-        <iframe
-            title="Peta Lokasi Presensi"
-            width="100%"
-            height="100%"
-            frameBorder="0"
-            scrolling="no"
-            marginHeight="0"
-            marginWidth="0"
-            src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(data.longitude) - 0.005}%2C${Number(data.latitude) - 0.005}%2C${Number(data.longitude) + 0.005}%2C${Number(data.latitude) + 0.005}&layer=mapnik&marker=${data.latitude}%2C${data.longitude}`}
-            className="w-full h-full"
-        />
-    ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-4 text-center">
-            <FiMapPin className="h-8 w-8 mb-2 animate-bounce text-blue-600" />
-            <p className="text-xs font-semibold">Sedang mencari sinyal GPS perangkat Anda...</p>
-            <p className="text-[10px] text-slate-400 mt-1">Pastikan izin akses lokasi diizinkan pada browser.</p>
-        </div>
-    )}
-</div>
-
-{/* Pintasan Buka di Google Maps */}
-{data.latitude && data.longitude && (
-    <div className="flex justify-between items-center text-xs mt-1.5 px-1">
-        <span className="text-slate-500 font-mono text-[11px]">
-            {Number(data.latitude).toFixed(6)}, {Number(data.longitude).toFixed(6)}
-        </span>
-        <a
-            href={`https://www.google.com/maps?q=${data.latitude},${data.longitude}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-700 hover:text-blue-800 font-semibold inline-flex items-center gap-1 text-[11px]"
-        >
-            <span>Buka di Google Maps</span>
-            <FiExternalLink className="h-3 w-3" />
-        </a>
-    </div>
-)}
-```
+**Kesimpulan:** fitur "izin/sakit masuk riwayat" **tidak bisa** dikerjakan hanya di frontend. `IzinController@store` wajib diisi dulu, kalau tidak akan selalu kosong.
 
 ---
 
-### TAHAP 3: Selaraskan Desain Visual dengan Dashboard
+## ⚠️ Aturan Main (wajib dipatuhi junior/AI)
 
-Gunakan identitas visual yang serasi dengan `resources/js/pages/Pegawai/Dashboard.jsx`:
-
-1. **Hero Banner di Bagian Atas:**
-   - Gunakan gradien biru tua elegan:
-     `bg-gradient-to-br from-[#1e3a8a] via-[#1e40af] to-[#1e3a8a] text-white`
-   - Berikan informasi ringkas:
-     - Judul: *"Presensi Harian Geoselfie"*
-     - Subtitle: *"Ambil swafoto dan pastikan titik GPS Anda aktif sebelum mengirim data kehadiran."*
-2. **Pilihan Otomatis & Cerdas Tipe Absen:**
-   - Ambil props `absenHariIni` dari controller:
-     - Jika `!absenHariIni.sudah_masuk` 👉 Otomatis pilih tipe **Masuk**.
-     - Jika `absenHariIni.sudah_masuk && !absenHariIni.sudah_pulang` 👉 Otomatis pilih tipe **Pulang**.
-     - Jika `absenHariIni.sudah_masuk && absenHariIni.sudah_pulang` 👉 Tampilkan kartu status *"Presensi Hari Ini Lengkap / Selesai"* dengan waktu presensi masuk dan pulang.
-3. **Penyelarasan Tombol:**
-   - Tombol Ambil Swafoto: Biru elegan (`bg-blue-700 hover:bg-blue-800 text-white`).
-   - Tombol Ulangi Foto: Outline netral (`border-slate-300 text-slate-700 hover:bg-slate-100`).
-   - Tombol Kirim Presensi: Biru solid atau Emerald (`bg-blue-700 hover:bg-blue-800 text-white font-bold`).
+- Kerjakan di branch baru: `git checkout -b feature/riwayat-presensi-ux`.
+- **Jangan** menambah package NPM/composer baru.
+- **Jangan** mengubah skema database (tidak perlu migration baru). Kalau terpaksa, jelaskan alasannya di PR.
+- **Jangan** menyentuh halaman lain selain yang disebut di dokumen ini.
+- Semua teks UI berbahasa Indonesia, konsisten dengan halaman lain.
+- Angka/format tanggal pakai lokal Indonesia (`id-ID`), zona waktu `Asia/Jakarta`.
+- Jalankan `npm run build` + `php artisan test` sebelum commit.
 
 ---
 
-### TAHAP 4: Perbaiki & Hubungkan Data ke Riwayat Presensi (`Kalender.jsx`)
+## TAHAP 1 — Backend: benahi model & simpan pengajuan izin
 
-#### 4.1 Bug yang Ditemukan di `Kalender.jsx`
-Di dalam tabel riwayat pada `resources/js/pages/Pegawai/Kalender.jsx`, kode saat ini membaca properti objek:
-- `item.tanggal` ❌ (Padahal nama kolom database adalah `tgl_absen`)
-- `item.jam_pulang` ❌ (Padahal nama kolom database adalah `jam_keluar`)
+### 1.1 `app/Models/Izin.php`
 
-Akibatnya, data yang baru saja diabsen tidak muncul tanggal atau jam pulangnya (kosong/strip).
+Ganti `$fillable` menjadi sesuai kolom DB:
 
-#### 4.2 Solusi Perbaikan di `Kalender.jsx`
-Perbarui baris mapping tabel riwayat menjadi:
-
-```jsx
-<td className="py-3.5 px-4 font-semibold text-slate-800 text-xs">
-    {/* Fallback membaca tgl_absen atau tanggal */}
-    {item.tgl_absen || item.tanggal}
-</td>
-<td className="py-3.5 px-4 text-slate-600 font-mono text-xs">
-    {item.jam_masuk ? (
-        <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-            {item.jam_masuk.substring(0, 5)} WIB
-        </span>
-    ) : (
-        <span className="text-slate-400">-</span>
-    )}
-</td>
-<td className="py-3.5 px-4 text-slate-600 font-mono text-xs">
-    {/* Fallback membaca jam_keluar atau jam_pulang */}
-    {(item.jam_keluar || item.jam_pulang) ? (
-        <span className="text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-            {(item.jam_keluar || item.jam_pulang).substring(0, 5)} WIB
-        </span>
-    ) : (
-        <span className="text-slate-400">-</span>
-    )}
-</td>
-<td className="py-3.5 px-4">
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
-        item.status === 'Hadir' 
-            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-            : item.status === 'Izin' || item.status === 'Sakit'
-            ? 'bg-amber-50 text-amber-700 border border-amber-200'
-            : 'bg-rose-50 text-rose-700 border border-rose-200'
-    }`}>
-        {item.status || 'Hadir'}
-    </span>
-</td>
-```
-
-#### 4.3 Penyempurnaan di `AbsensiController.php` (Method `index`)
-Pastikan pada query `index` data diformat dengan baik dan dikirim lengkap:
 ```php
+protected $fillable = [
+    'nip',
+    'tgl_mulai',
+    'tgl_selesai',
+    'status',            // enum: 'izin' | 'sakit'
+    'keterangan',
+    'bukti_file',
+    'status_approval',   // enum: 'pending' | 'approved' | 'rejected'
+];
+```
+
+Tambahkan cast agar tanggal konsisten:
+
+```php
+protected $casts = [
+    'tgl_mulai'   => 'date:Y-m-d',
+    'tgl_selesai' => 'date:Y-m-d',
+];
+```
+
+### 1.2 `app/Http/Controllers/IzinController.php`
+
+`create()` — kirim riwayat milik guru yang login, **dengan nama field yang dipakai `Izin.jsx`** (`jenis_izin`, `status`, `tgl_mulai`, `tgl_selesai`, `alasan`):
+
+```php
+use App\Models\Izin;
+use Illuminate\Support\Facades\Auth;
+
+public function create()
+{
+    $pegawai = Auth::guard('pegawai')->user();
+
+    $riwayatIzin = Izin::where('nip', $pegawai->nip)
+        ->orderByDesc('tgl_mulai')
+        ->limit(10)
+        ->get()
+        ->map(fn ($i) => [
+            'jenis_izin' => ucfirst($i->status),                       // Izin / Sakit
+            'tgl_mulai'  => $i->tgl_mulai?->format('Y-m-d'),
+            'tgl_selesai'=> $i->tgl_selesai?->format('Y-m-d'),
+            'alasan'     => $i->keterangan,
+            'status'     => match ($i->status_approval) {               // label untuk badge
+                'approved' => 'Disetujui',
+                'rejected' => 'Ditolak',
+                default    => 'Menunggu',
+            },
+        ]);
+
+    return Inertia::render('Pegawai/Izin', ['riwayatIzin' => $riwayatIzin]);
+}
+```
+
+`store()` — validasi, simpan file, simpan record:
+
+```php
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+
+public function store(Request $request)
+{
+    $pegawai = Auth::guard('pegawai')->user();
+    $today = now('Asia/Jakarta')->toDateString();
+
+    $validated = $request->validate([
+        'jenis_izin' => ['required', Rule::in(['Izin', 'Sakit'])],
+        'tgl_mulai'  => ['required', 'date', 'after_or_equal:' . $today],
+        'tgl_selesai'=> ['required', 'date', 'after_or_equal:tgl_mulai'],
+        'alasan'     => ['required', 'string', 'min:5', 'max:500'],
+        'dokumen'    => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+    ], [
+        'jenis_izin.required'   => 'Jenis permohonan wajib dipilih.',
+        'tgl_mulai.after_or_equal' => 'Tanggal mulai tidak boleh di masa lalu.',
+        'tgl_selesai.after_or_equal' => 'Tanggal selesai tidak boleh sebelum tanggal mulai.',
+        'alasan.required'       => 'Keterangan/alasan wajib diisi.',
+        'alasan.min'            => 'Alasan minimal 5 karakter.',
+        'dokumen.mimes'         => 'Bukti harus berupa JPG, PNG, atau PDF.',
+        'dokumen.max'           => 'Ukuran bukti maksimal 2 MB.',
+    ]);
+
+    $bukti = $request->hasFile('dokumen')
+        ? $request->file('dokumen')->store('izin', 'public')
+        : null;
+
+    Izin::create([
+        'nip'             => $pegawai->nip,
+        'tgl_mulai'       => $validated['tgl_mulai'],
+        'tgl_selesai'     => $validated['tgl_selesai'],
+        'status'          => strtolower($validated['jenis_izin']), // 'izin' | 'sakit'
+        'keterangan'      => trim(strip_tags($validated['alasan'])),
+        'bukti_file'      => $bukti,
+        'status_approval' => 'pending',
+    ]);
+
+    return redirect()->route('izin.create')
+        ->with('success', 'Permohonan ' . $validated['jenis_izin'] . ' berhasil dikirim dan menunggu persetujuan.');
+}
+```
+
+### 1.3 `resources/js/pages/Pegawai/Izin.jsx`
+
+- Hapus `<option value="Cuti">` dari dropdown **Jenis Permohonan** (enum DB hanya `izin`/`sakit`; opsi Cuti akan error saat disimpan).
+- Ubah label "Permohonan Izin & Cuti" → "Permohonan Izin & Sakit".
+- Tombol submit: `bg-blue-800 hover:bg-blue-900` (samakan dengan halaman lain; hilangkan `shadow-blue-600/20`).
+- Ikon judul form masih `text-amber-500` → ganti `text-blue-700 dark:text-blue-300`.
+
+### ✅ Verifikasi Tahap 1
+
+- [ ] Submit form izin → muncul flash sukses, record masuk tabel `izin`.
+- [ ] `/izin` menampilkan riwayat yang baru dibuat.
+- [ ] Submit dengan tanggal lampau / alasan kosong → muncul error validasi di field terkait.
+- [ ] Submit tanpa dokumen tetap berhasil.
+
+---
+
+## TAHAP 2 — Backend: gabungkan izin/sakit ke Riwayat Presensi
+
+Edit `app/Http/Controllers/AbsensiController.php`, method `index()`.
+
+**Aturan penggabungan (tulis apa adanya, jangan improvisasi):**
+
+1. Satu baris = satu tanggal.
+2. Jika pada tanggal itu ada data `absensi` → **absensi menang** (status `Hadir`).
+3. Jika tidak ada absensi tapi ada izin/sakit yang mencakup tanggal tersebut → baris `Izin` / `Sakit`.
+4. Izin dengan `status_approval = 'rejected'` **tidak** ditampilkan.
+5. Rentang izin multi-hari dipecah menjadi satu baris per tanggal, hanya yang berada di bulan filter.
+6. Urutan: tanggal terbaru di atas.
+
+Kode acuan:
+
+```php
+use App\Models\Izin;
+
 public function index(Request $request)
 {
     $pegawai = Auth::guard('pegawai')->user();
 
-    $bulan = $request->input('bulan', date('m'));
-    $tahun = $request->input('tahun', date('Y'));
+    $bulan = (int) $request->input('bulan', now('Asia/Jakarta')->month);
+    $tahun = (int) $request->input('tahun', now('Asia/Jakarta')->year);
+    $awal  = Carbon::create($tahun, $bulan, 1)->startOfMonth();
+    $akhir = $awal->copy()->endOfMonth();
 
-    $riwayat = Absensi::where('nip', $pegawai->nip)
-        ->whereMonth('tgl_absen', $bulan)
-        ->whereYear('tgl_absen', $tahun)
-        ->orderBy('tgl_absen', 'desc')
+    $absensi = Absensi::where('nip', $pegawai->nip)
+        ->whereBetween('tgl_absen', [$awal->toDateString(), $akhir->toDateString()])
         ->get();
 
-    $totalHadir = $riwayat->where('status', 'Hadir')->count();
-    $totalIzinSakit = $riwayat->whereIn('status', ['Izin', 'Sakit'])->count();
-    $totalAlpa = $riwayat->where('status', 'Alpa')->count();
+    $izin = Izin::where('nip', $pegawai->nip)
+        ->where('status_approval', '!=', 'rejected')
+        ->whereDate('tgl_mulai', '<=', $akhir->toDateString())
+        ->whereDate('tgl_selesai', '>=', $awal->toDateString())
+        ->get();
+
+    $baris = [];
+
+    // 1) Absensi menang atas izin pada tanggal yang sama
+    foreach ($absensi as $a) {
+        $baris[$a->tgl_absen] = [
+            'id'         => $a->id,
+            'tgl_absen'  => $a->tgl_absen,
+            'jam_masuk'  => $a->jam_masuk,
+            'jam_keluar' => $a->jam_keluar,
+            'status'     => $a->status ?: 'Hadir',
+            'keterangan' => null,
+            'sumber'     => 'absensi',
+        ];
+    }
+
+    // 2) Sebar rentang izin/sakit jadi per tanggal
+    foreach ($izin as $i) {
+        $tgl = Carbon::parse($i->tgl_mulai)->startOfDay();
+        $selesai = Carbon::parse($i->tgl_selesai)->startOfDay();
+
+        while ($tgl->lte($selesai)) {
+            $kunci = $tgl->toDateString();
+
+            if ($tgl->betweenIncluded($awal, $akhir) && !isset($baris[$kunci])) {
+                $baris[$kunci] = [
+                    'id'         => 'izin-' . $i->id . '-' . $kunci,
+                    'tgl_absen'  => $kunci,
+                    'jam_masuk'  => null,
+                    'jam_keluar' => null,
+                    'status'     => $i->status === 'sakit' ? 'Sakit' : 'Izin',
+                    'keterangan' => $i->keterangan,
+                    'sumber'     => 'izin',
+                ];
+            }
+
+            $tgl->addDay();
+        }
+    }
+
+    krsort($baris);
+    $riwayat = collect(array_values($baris));
 
     return Inertia::render('Pegawai/Kalender', [
         'riwayat'   => $riwayat,
         'statistik' => [
-            'hadir'      => $totalHadir,
-            'izin_sakit' => $totalIzinSakit,
-            'alpa'       => $totalAlpa,
+            'hadir' => $riwayat->where('status', 'Hadir')->count(),
+            'izin'  => $riwayat->where('status', 'Izin')->count(),
+            'sakit' => $riwayat->where('status', 'Sakit')->count(),
+            'alpa'  => $riwayat->where('status', 'Alpa')->count(),
         ],
-        'filter'    => [
-            'bulan' => (string) (int) $bulan,
-            'tahun' => (string) $tahun,
-        ]
+        'filter'    => ['bulan' => (string) $bulan, 'tahun' => (string) $tahun],
     ]);
 }
 ```
 
+**Catatan jujur untuk junior:** `Alpa` hanya menghitung baris berstatus `Alpa` di tabel `absensi`. Saat ini tidak ada proses yang otomatis menandai guru alpa, jadi angka Alpa akan tetap 0 sampai admin menambahkan data tersebut. **Jangan** mengarang logika "hari kerja kosong = alpa" — itu butuh kalender hari efektif sekolah (di luar scope).
+
+### ✅ Verifikasi Tahap 2
+
+- [ ] Buat 1 izin 2 hari di bulan berjalan → `/kalender` menampilkan 2 baris `Izin`.
+- [ ] Buat 1 sakit 1 hari → tampil baris `Sakit` (bukan `Izin`).
+- [ ] Tanggal yang punya absensi + izin → tampil `Hadir` (bukan dobel).
+- [ ] Izin `rejected` → tidak muncul.
+- [ ] Ganti filter bulan → hanya baris bulan itu yang tampil.
+
 ---
 
-### TAHAP 5: Susunan Tata Letak Responsif (Mobile & Desktop)
+## TAHAP 3 — Frontend: rombak `Kalender.jsx`
 
-Pada berkas `Absensi.jsx`, gunakan struktur grid berikut agar responsif di semua ukuran layar:
+Target file: `resources/js/pages/Pegawai/Kalender.jsx` (tulis ulang bagian render; logika filter tetap).
+
+### 3.1 Palet status (satu sumber kebenaran)
+
+Buat konstanta di atas komponen, lalu pakai di badge, kartu statistik, dan legenda:
 
 ```jsx
-<div className="space-y-4 max-w-5xl mx-auto">
-    {/* 1. HERO BANNER PERSIS SEPERTI DASHBOARD */}
-    <div className="rounded-2xl bg-gradient-to-br from-[#1e3a8a] via-[#1e40af] to-[#1e3a8a] text-white p-5 sm:p-6 shadow-md border-b-4 border-blue-400">
-        <h2 className="text-lg sm:text-xl font-black">Presensi Harian Geoselfie</h2>
-        <p className="text-xs text-blue-100 mt-1">
-            Silakan verifikasi kehadiran Anda dengan swafoto dan pastikan GPS dalam keadaan aktif.
-        </p>
-    </div>
+const STATUS = {
+    Hadir: {
+        label: 'Hadir',
+        card: 'border-emerald-200 dark:border-emerald-900',
+        iconBg: 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300',
+        value: 'text-emerald-700 dark:text-emerald-400',
+        badge: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-900',
+        dot: 'bg-emerald-500',
+    },
+    Izin: {
+        label: 'Izin',
+        card: 'border-blue-200 dark:border-blue-900',
+        iconBg: 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300',
+        value: 'text-blue-700 dark:text-blue-300',
+        badge: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-900',
+        dot: 'bg-blue-500',
+    },
+    Sakit: {
+        label: 'Sakit',
+        card: 'border-yellow-200 dark:border-yellow-900',
+        iconBg: 'bg-yellow-50 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-300',
+        value: 'text-yellow-700 dark:text-yellow-300',
+        badge: 'bg-yellow-50 text-yellow-800 border-yellow-300 dark:bg-yellow-950/50 dark:text-yellow-300 dark:border-yellow-900',
+        dot: 'bg-yellow-400',
+    },
+    Alpa: {
+        label: 'Alpa',
+        card: 'border-rose-200 dark:border-rose-900',
+        iconBg: 'bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300',
+        value: 'text-rose-700 dark:text-rose-400',
+        badge: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-900',
+        dot: 'bg-rose-500',
+    },
+};
 
-    {/* 2. KONTEN GRID: 1 Kolom di Mobile, 2 Kolom di Layar Lebar */}
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        
-        {/* KOLOM KIRI (7 Kolom Desktop): Kamera Webcam & Foto Preview */}
-        <div className="lg:col-span-7 space-y-4">
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
-                {/* Kamera Webcam / Gambar Preview */}
-                ...
-                {/* Tombol Ambil / Ulangi Foto */}
-                ...
+const statusStyle = (status) => STATUS[status] ?? STATUS.Hadir;
+```
+
+**Aturan warna (dari issue, jangan diubah):** `Hadir` hijau, `Izin` biru, `Sakit` kuning, `Alpa` merah. Jangan pakai kuning untuk status lain dan jangan pakai biru untuk Hadir lagi.
+
+### 3.2 Header halaman
+
+- Judul: "Riwayat Presensi" (`text-lg sm:text-xl font-black`).
+- Subjudul: "Rekap kehadiran, izin, dan sakit Anda per bulan."
+- Tambahkan **legenda** chip kecil di kanan/bawah judul (Hadir / Izin / Sakit / Alpa) memakai `dot` + `label` dari `STATUS`. Di mobile legenda boleh membungkus (`flex-wrap`).
+
+### 3.3 Kartu statistik → **4 kartu terpisah**
+
+```jsx
+<div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    {[
+        { key: 'hadir', status: 'Hadir', icon: FiCheckCircle },
+        { key: 'izin',  status: 'Izin',  icon: FiFileText },
+        { key: 'sakit', status: 'Sakit', icon: FiThermometer },
+        { key: 'alpa',  status: 'Alpa',  icon: FiXCircle },
+    ].map(({ key, status, icon: Icon }) => {
+        const s = STATUS[status];
+        return (
+            <div key={key} className={`bg-white dark:bg-slate-900 rounded-2xl p-3.5 border ${s.card} shadow-xs flex items-center gap-3`}>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${s.iconBg}`}>
+                    <Icon />
+                </div>
+                <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
+                        {s.label}
+                    </p>
+                    <p className={`text-lg font-black leading-tight ${s.value}`}>
+                        {statistik[key] ?? 0} <span className="text-[10px] font-medium text-slate-500">Hari</span>
+                    </p>
+                </div>
             </div>
-        </div>
-
-        {/* KOLOM KANAN (5 Kolom Desktop): Peta OpenStreetMap & Formulir Kirim */}
-        <div className="lg:col-span-5 space-y-4">
-            {/* Kartu Peta */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
-                {/* OpenStreetMap iframe */}
-                ...
-                {/* Info Koordinat & Status GPS */}
-                ...
-            </div>
-
-            {/* Kartu Konfirmasi & Tombol Kirim */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
-                {/* Switcher Tipe Absen: Masuk vs Pulang */}
-                ...
-                {/* Tombol Kirim Presensi */}
-                ...
-            </div>
-        </div>
-
-    </div>
+        );
+    })}
 </div>
 ```
 
+- Hapus kartu gabungan "Izin / Sakit".
+- Default prop: `statistik = { hadir: 0, izin: 0, sakit: 0, alpa: 0 }`.
+- Import ikon yang dipakai saja: `FiCheckCircle, FiFileText, FiThermometer, FiXCircle, FiCalendar, FiFilter`.
+
+### 3.4 Toolbar filter (ringkas, satu baris di desktop)
+
+Gabungkan filter Bulan + Tahun + tombol reset ke **satu** card:
+
+- Wrapper: `bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3 shadow-xs`.
+- Layout: `flex flex-col sm:flex-row sm:items-end gap-2.5`.
+- Dua `<select>` (`aria-label="Filter bulan"` / `"Filter tahun"`) dengan class ringkas:
+  `h-9 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-xs font-semibold text-slate-800 dark:text-slate-100 focus:border-blue-800 focus:ring-0`.
+- Tombol "Reset" (outline): `h-9 px-3 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800`.
+- `router.get('/kalender', params, { preserveState: true, preserveScroll: true, replace: true })`.
+- Tampilkan jumlah baris: `Menampilkan {riwayat.length} baris` (`text-[11px] text-slate-500`) dengan `aria-live="polite"`.
+
+### 3.5 Tabel desktop + kartu mobile (wajib dua-duanya)
+
+**Desktop (`hidden md:block`)**: tabel dengan header `scope="col"`, kolom:
+
+| Kolom | Isi |
+|---|---|
+| Tanggal | `fmtTanggal(item.tgl_absen)` |
+| Jam Masuk | `fmtJam(item.jam_masuk)` atau `—` |
+| Jam Pulang | `fmtJam(item.jam_keluar)` atau `—` |
+| Status | badge `statusStyle(item.status).badge` |
+| Keterangan | `item.keterangan` (truncate, `hidden lg:table-cell`) atau `—` untuk absensi |
+
+Detail visual: `thead` background `bg-slate-50 dark:bg-slate-800/60`, `text-[10px] uppercase tracking-wider text-slate-500`, baris `hover:bg-slate-50/80 dark:hover:bg-slate-800/40`, padding `py-3 px-4`, pemisah `divide-y divide-slate-100 dark:divide-slate-800`.
+
+**Mobile (`md:hidden`)**: satu kartu per baris.
+
+```jsx
+<div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+    {riwayat.map((item) => {
+        const s = statusStyle(item.status);
+        return (
+            <div key={item.id} className="p-3.5 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                        {fmtTanggal(item.tgl_absen)}
+                    </p>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${s.badge}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden="true" />
+                        {s.label}
+                    </span>
+                </div>
+                <div className="flex items-center gap-3 text-[11px] text-slate-600 dark:text-slate-300">
+                    <span className="inline-flex items-center gap-1">
+                        <FiCalendar className="h-3 w-3 text-slate-400" aria-hidden="true" />
+                        Masuk: {fmtJam(item.jam_masuk) ?? '—'}
+                    </span>
+                    <span>Pulang: {fmtJam(item.jam_keluar) ?? '—'}</span>
+                </div>
+                {item.keterangan && (
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                        {item.keterangan}
+                    </p>
+                )}
+            </div>
+        );
+    })}
+</div>
+```
+
+- Empty state (dipakai di dua-duanya): ikon + "Belum ada data presensi pada periode ini." + subteks "Coba ganti bulan atau tahun."
+- Baris izin/sakit **tidak** menampilkan jam (pakai `—`), cukup status + keterangan.
+
+### 3.6 Kepadatan & responsif
+
+- Container: `space-y-3.5 max-w-5xl` (bukan `space-y-6`).
+- Semua teks tabel `text-xs`, header `text-[10px]`.
+- Uji di 360px, 414px, 768px, 1280px — **tidak boleh ada horizontal scroll di body**.
+- Kartu statistik mobile `grid-cols-2` (bukan 1 kolom panjang).
+- Pastikan dark mode tetap terbaca (semua class punya pasangan `dark:`).
+
+### 3.7 Aksesibilitas
+
+- Status **tidak boleh** dibedakan hanya dengan warna: teks label selalu ada di dalam badge.
+- Tabel: `<th scope="col">`; badge dot `aria-hidden="true"`.
+- Select filter punya `aria-label`.
+- Jumlah baris dibungkus `aria-live="polite"`.
+
+### ✅ Verifikasi Tahap 3
+
+- [ ] Warna sesuai: Hadir hijau, Izin biru, Sakit kuning, Alpa merah (cek light & dark).
+- [ ] Ada 4 kartu statistik, tidak ada lagi kartu gabungan Izin/Sakit.
+- [ ] Di 375px: tampil kartu mobile, tanpa scroll horizontal.
+- [ ] Di ≥768px: tampil tabel.
+- [ ] Filter bulan/tahun + Reset berfungsi tanpa reload penuh.
+- [ ] Data izin/sakit dari Tahap 2 tampil di kedua layout.
+
 ---
 
-## 🧪 Panduan Pengujian & Verifikasi (Testing Checklist)
+## TAHAP 4 — Test otomatis (wajib, kecil saja)
 
-Lakukan pengujian berikut setelah kode selesai ditulis:
+Buat `tests/Feature/KalenderIzinTest.php` (pola sama seperti `tests/Feature/AbsensiTest.php` yang sudah ada):
 
-- [ ] **1. Uji GPS di Luar Sekolah:**
-  - Buka halaman `/absensi`.
-  - Pastikan titik GPS terdeteksi. Meskipun lokasi berada > 100m dari sekolah, tombol **"Kirim Presensi"** tetap aktif dan TIDAK diblokir.
-- [ ] **2. Uji Tampilan Peta:**
-  - Pastikan `iframe` OpenStreetMap muncul dengan jelas dan penanda (marker) berada di posisi koordinat pengguna saat ini.
-  - Klik link *"Buka di Google Maps"*, pastikan titik yang terbuka di Google Maps sesuai dengan koordinat.
-- [ ] **3. Uji Absen Masuk:**
-  - Ambil swafoto menggunakan webcam.
-  - Klik **"Kirim Presensi MASUK"**.
-  - Pastikan sistem berhasil redirect ke `/dashboard` dengan flash message sukses.
-- [ ] **4. Uji Verifikasi Riwayat Presensi:**
-  - Buka menu **"Riwayat Presensi"** (`/kalender`).
-  - Pastikan baris tanggal hari ini **muncul** di tabel, kolom Tanggal terisi, jam masuk terisi dengan format jam yang benar (contoh: `07:15 WIB`), dan status menunjukkan `Hadir`.
-- [ ] **5. Uji Absen Pulang:**
-  - Buka kembali menu `/absensi`.
-  - Sistem otomatis menyarankan atau memilih tipe **PULANG**.
-  - Ambil swafoto dan kirim presensi pulang.
-  - Cek kembali di menu `/kalender`, pastikan kolom Jam Pulang sudah terisi.
-- [ ] **6. Uji Responsifitas Layar:**
-  - Periksa melalui Inspect Element pada ukuran HP (375px atau 412px). Seluruh teks, kamera, peta, dan tombol tidak boleh terpotong atau menimbulkan horizontal scrollbar.
-  - Periksa pada ukuran Desktop (1280px+), tampilan 2 kolom tersusun rapi.
-- [ ] **7. Verifikasi Kompilasi & Syntax:**
-  - Jalankan build frontend: `cmd.exe /c "npm run build"`. Pastikan build berhasil tanpa error sintaks Vite/React.
-  - Periksa syntax PHP: `php -l app/Http/Controllers/AbsensiController.php`.
+```php
+<?php
+
+use App\Models\Absensi;
+use App\Models\Izin;
+use App\Models\Pegawai;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+function pegawaiUji(): Pegawai
+{
+    return Pegawai::create([
+        'nip' => '199002022020011002',
+        'nama_lengkap' => 'Siti Aminah',
+        'jabatan' => 'Guru Mapel',
+        'no_hp' => '081200000000',
+        'email' => 'siti@example.test',
+        'jenis_kelamin' => 'P',
+        'password' => bcrypt('password'),
+    ]);
+}
+
+// Tanggal tetap di tengah bulan berjalan agar test tidak jatuh ke bulan lain
+function tanggalUji(int $offsetHari = 0): string
+{
+    return now('Asia/Jakarta')->startOfMonth()->addDays(9 + $offsetHari)->toDateString();
+}
+
+test('izin dan sakit muncul sebagai baris riwayat terpisah', function () {
+    $pegawai = pegawaiUji();
+
+    Izin::create([
+        'nip' => $pegawai->nip,
+        'tgl_mulai' => tanggalUji(0),
+        'tgl_selesai' => tanggalUji(0),
+        'status' => 'izin',
+        'keterangan' => 'Urusan keluarga',
+        'status_approval' => 'pending',
+    ]);
+
+    Izin::create([
+        'nip' => $pegawai->nip,
+        'tgl_mulai' => tanggalUji(1),
+        'tgl_selesai' => tanggalUji(1),
+        'status' => 'sakit',
+        'keterangan' => 'Demam',
+        'status_approval' => 'approved',
+    ]);
+
+    $this->actingAs($pegawai, 'pegawai')
+        ->get('/kalender')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('statistik.izin', 1)
+            ->where('statistik.sakit', 1)
+            ->where('statistik.hadir', 0)
+        );
+});
+
+test('absensi menang atas izin pada tanggal yang sama', function () {
+    $pegawai = pegawaiUji();
+    $tanggal = tanggalUji(0);
+
+    Absensi::create([
+        'nip' => $pegawai->nip,
+        'tgl_absen' => $tanggal,
+        'jam_masuk' => '07:00:00',
+        'status' => 'Hadir',
+    ]);
+
+    Izin::create([
+        'nip' => $pegawai->nip,
+        'tgl_mulai' => $tanggal,
+        'tgl_selesai' => $tanggal,
+        'status' => 'izin',
+        'keterangan' => 'Tes dobel',
+        'status_approval' => 'approved',
+    ]);
+
+    $this->actingAs($pegawai, 'pegawai')
+        ->get('/kalender')
+        ->assertInertia(fn ($page) => $page
+            ->where('statistik.hadir', 1)
+            ->where('statistik.izin', 0)
+            ->has('riwayat', 1)
+        );
+});
+```
+
+> Jika `assertInertia` tidak dikenali, pastikan package `inertiajs/inertia-laravel` sudah terpasang (biasanya sudah, karena dipakai semua halaman).
 
 ---
 
-## 📌 Catatan Tambahan untuk Junior Programmer / AI
-1. **Tidak Perlu Install Package NPM Baru:** Cukup gunakan dependensi yang sudah ada di proyek (`react-webcam`, `react-icons`, `@inertiajs/react`). Peta dibuat menggunakan standard HTML `iframe` OpenStreetMap.
-2. **Keamanan Data Base64:** Method `uploadFotoBase64` pada `AbsensiController` sudah menangani konversi string Base64 ke berkas `.jpg` di direktori `storage/app/public/absensi/`. Pastikan direktori storage sudah di-*link* (`php artisan storage:link`).
-3. **Komitmen Git:** Selalu kerjakan di branch fitur (jangan langsung di `main`), lakukan commit dengan pesan yang deskriptif, dan lakukan test build sebelum membuat pull request.
+## TAHAP 5 — Verifikasi akhir & commit
+
+Jalankan berurutan:
+
+```bash
+php -l app/Http/Controllers/IzinController.php
+php -l app/Http/Controllers/AbsensiController.php
+php -l app/Models/Izin.php
+php artisan test
+npm run build
+```
+
+Checklist manual:
+
+- [ ] `/izin` → kirim izin 2 hari + upload JPG → sukses, muncul di riwayat kanan.
+- [ ] `/kalender` → baris Izin tampil 2 hari, badge biru, tanpa jam.
+- [ ] Kirim sakit 1 hari → badge kuning, kartu statistik Sakit bertambah.
+- [ ] Absen masuk di hari yang sama dengan izin → status jadi Hadir (tidak dobel).
+- [ ] Filter bulan lain → data hilang/muncul sesuai periode.
+- [ ] Mobile 375px: kartu mobile rapi, tombol/select bisa disentuh (tinggi ≥ 36px).
+- [ ] Dark mode: badge, kartu, dan teks tetap kontras.
+- [ ] Tidak ada error di console browser.
+
+Commit (pesan deskriptif, satu commit boleh digabung):
+
+```bash
+git add app/Models/Izin.php app/Http/Controllers/IzinController.php \
+        app/Http/Controllers/AbsensiController.php \
+        resources/js/pages/Pegawai/Kalender.jsx \
+        resources/js/pages/Pegawai/Izin.jsx \
+        tests/Feature/KalenderIzinTest.php
+git commit -m "feat(riwayat): UI/UX riwayat presensi responsif + izin/sakit tampil terpisah"
+git push -u origin feature/riwayat-presensi-ux
+```
+
+Lalu buka PR ke `main` dan tulis di deskripsi: apa yang diubah, screenshot mobile + desktop, dan hasil `php artisan test`.
+
+---
+
+## 📌 Definition of Done
+
+- [ ] Riwayat presensi punya layout kartu di mobile dan tabel di desktop.
+- [ ] 4 status dengan warna baku: Hadir hijau, Izin biru, Sakit kuning, Alpa merah.
+- [ ] Izin dan Sakit **tidak** lagi digabung di statistik maupun badge.
+- [ ] Pengajuan izin/sakit benar-benar tersimpan (bukan form kosong) dan tampil di `/kalender` per tanggal.
+- [ ] Tidak ada horizontal scroll di 375px; dark mode tetap rapi.
+- [ ] `php artisan test` dan `npm run build` lulus.
+
+---
+
+## 🚫 Di Luar Scope (jangan dikerjakan di PR ini)
+
+- Halaman approval izin untuk admin (tabel `status_approval` tetap `pending` sampai fitur itu dibuat).
+- Perhitungan Alpa otomatis dari hari efektif sekolah.
+- Jenis "Cuti" (butuh perubahan enum + migration).
+- Export PDF/Excel riwayat presensi.
+- Notifikasi WhatsApp/email saat izin disetujui.
