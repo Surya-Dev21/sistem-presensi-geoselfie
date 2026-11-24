@@ -14,6 +14,10 @@ import { FlashAlert } from "@/components/flash-alert";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { confirmAction } from "@/lib/swal";
 
+const SCHOOL_LOGO = "/images/smkpbb.png";
+const SCHOOL_ABBR = "SIPRES";
+const SCHOOL_FULL = "SMK Pembangunan Bandung Barat";
+
 interface AdminLayoutProps {
     children: React.ReactNode;
     title?: string;
@@ -66,17 +70,26 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                     ${open ? "translate-x-0" : "-translate-x-full"}
                 `}
             >
-                <div className="flex items-center justify-between px-4 py-4 border-b border-blue-800">
-                    <div className="min-w-0">
-                        <p className="text-sm font-black tracking-widest leading-none">SIPRES</p>
-                        <p className="text-[9px] text-blue-100 font-medium leading-tight truncate mt-0.5">
-                            SMK Pembangunan Bandung Barat
-                        </p>
-                    </div>
+                <div className="flex items-center justify-between px-4 py-3.5 border-b border-blue-800 bg-blue-900">
+                    <Link href="/admin/dashboard" className="flex items-center gap-2.5 min-w-0">
+                        <img
+                            src={SCHOOL_LOGO}
+                            alt={SCHOOL_FULL}
+                            className="w-9 h-9 object-contain flex-shrink-0"
+                        />
+                        <div className="min-w-0">
+                            <p className="text-sm font-black text-white tracking-widest leading-none">
+                                {SCHOOL_ABBR}
+                            </p>
+                            <p className="text-[9px] text-blue-100 font-medium leading-tight truncate mt-0.5">
+                                {SCHOOL_FULL}
+                            </p>
+                        </div>
+                    </Link>
                     <button
                         type="button"
                         onClick={() => setOpen(false)}
-                        className="md:hidden p-1.5 rounded-lg hover:bg-white/10 transition"
+                        className="md:hidden p-1.5 rounded-lg hover:bg-white/10 transition text-blue-100 hover:text-white"
                         aria-label="Tutup menu"
                     >
                         <FiX className="h-4 w-4" />
