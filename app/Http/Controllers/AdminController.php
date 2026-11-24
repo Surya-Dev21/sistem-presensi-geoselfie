@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Absensi;
 use App\Models\Izin;
+use App\Models\JadwalMengajar;
 use App\Models\Pegawai;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -19,16 +21,231 @@ class AdminController extends Controller
 
         $hadirHariIni = Absensi::where('tgl_absen', $today)->where('status', 'Hadir')->count();
         $izinHariIni = Absensi::where('tgl_absen', $today)->where('status', 'Izin')->count();
+        $pendingIzin = Izin::where('status_approval', 'pending')->count();
+
+        $persentaseHadir = $totalPegawai > 0 ? round(($hadirHariIni / $totalPegawai) * 100, 1) : 0;
+
+        $presensiHariIni = Absensi::with('pegawai:nip,nama_lengkap,jabatan')
+            ->where('tgl_absen', $today)
+            ->latest('jam_masuk')
+            ->take(5)
+            ->get()
+            ->map(fn ($a) => [
+                'id'         => $a->id,
+                'nip'        => $a->nip,
+                'nama'       => $a->pegawai?->nama_lengkap ?? $a->nip,
+                'jabatan'    => $a->pegawai?->jabatan ?? 'Guru',
+                'jam_masuk'  => $a->jam_masuk ? substr($a->jam_masuk, 0, 5) : null,
+                'jam_keluar' => $a->jam_keluar ? substr($a->jam_keluar, 0, 5) : null,
+                'status'     => $a->status,
+            ]);
 
         return Inertia::render('Admin/Dashboard', [
-            'totalPegawai' => $totalPegawai,
-            'hadirHariIni' => $hadirHariIni,
-            'izinHariIni' => $izinHariIni,
-            'pendingIzin' => Izin::where('status_approval', 'pending')->count(),
+            'totalPegawai'    => $totalPegawai,
+            'hadirHariIni'    => $hadirHariIni,
+            'izinHariIni'     => $izinHariIni,
+            'pendingIzin'     => $pendingIzin,
+            'persentaseHadir' => $persentaseHadir,
+            'presensiHariIni' => $presensiHariIni,
         ]);
     }
 
-    // Daftar pengajuan izin/sakit yang masuk dari guru
+    // ==========================================
+    // KELOLA PEGAWAI / GURU
+    // ==========================================
+    public function pegawaiIndex(Request $request)
+    {
+        $cari = $request->input('cari');
+
+        $daftarPegawai = Pegawai::query()
+            ->when($cari, function ($q, $cari) {
+                $q->where('nama_lengkap', 'like', "%{$cari}%")
+                  ->orWhere('nip', 'like', "%{$cari}%")
+                  ->orWhere('email', 'like', "%{$cari}%")
+                  ->orWhere('jabatan', 'like', "%{$cari}%");
+            })
+            ->latest('created_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('Admin/Pegawai', [
+            'daftarPegawai' => $daftarPegawai,
+            'filter'        => ['cari' => $cari],
+        ]);
+    }
+
+    public function pegawaiStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nip'           => ['required', 'string', 'max:30', 'unique:pegawai,nip'],
+            'nama_lengkap'  => ['required', 'string', 'max:100'],
+            'jabatan'       => ['required', 'string', 'max:50'],
+            'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
+            'no_hp'         => ['required', 'string', 'max:20'],
+            'email'         => ['required', 'email', 'max:100', 'unique:pegawai,email'],
+            'password'      => ['required', 'string', 'min:6'],
+        ], [
+            'nip.required'          => 'NIP wajib diisi.',
+            'nip.unique'            => 'NIP sudah terdaftar.',
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'jabatan.required'      => 'Jabatan wajib diisi.',
+            'jenis_kelamin.required'=> 'Jenis kelamin wajib dipilih.',
+            'no_hp.required'        => 'No. HP wajib diisi.',
+            'email.required'        => 'Email wajib diisi.',
+            'email.email'           => 'Format email tidak valid.',
+            'email.unique'          => 'Email sudah terdaftar.',
+            'password.min'          => 'Password minimal 6 karakter.',
+        ]);
+
+        $validated['password'] = Hash::make($validated['password']);
+        Pegawai::create($validated);
+
+        return back()->with('success', 'Data guru berhasil ditambahkan.');
+    }
+
+    public function pegawaiUpdate(Request $request, Pegawai $pegawai)
+    {
+        $validated = $request->validate([
+            'nama_lengkap'  => ['required', 'string', 'max:100'],
+            'jabatan'       => ['required', 'string', 'max:50'],
+            'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
+            'no_hp'         => ['required', 'string', 'max:20'],
+            'email'         => ['required', 'email', 'max:100', Rule::unique('pegawai', 'email')->ignore($pegawai->nip, 'nip')],
+            'password'      => ['nullable', 'string', 'min:6'],
+        ], [
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'jabatan.required'      => 'Jabatan wajib diisi.',
+            'jenis_kelamin.required'=> 'Jenis kelamin wajib dipilih.',
+            'no_hp.required'        => 'No. HP wajib diisi.',
+            'email.required'        => 'Email wajib diisi.',
+            'email.unique'          => 'Email sudah digunakan.',
+            'password.min'          => 'Password baru minimal 6 karakter.',
+        ]);
+
+        if (!empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+
+        $pegawai->update($validated);
+
+        return back()->with('success', 'Data guru berhasil diperbarui.');
+    }
+
+    public function pegawaiDestroy(Pegawai $pegawai)
+    {
+        $pegawai->delete();
+        return back()->with('success', 'Data guru berhasil dihapus.');
+    }
+
+    // ==========================================
+    // KELOLA LAPORAN ABSENSI
+    // ==========================================
+    public function laporanIndex(Request $request)
+    {
+        $bulan = $request->input('bulan', date('m'));
+        $tahun = $request->input('tahun', date('Y'));
+        $cari = $request->input('cari');
+
+        $laporan = Absensi::with('pegawai:nip,nama_lengkap,jabatan')
+            ->whereMonth('tgl_absen', $bulan)
+            ->whereYear('tgl_absen', $tahun)
+            ->when($cari, function ($q, $cari) {
+                $q->whereHas('pegawai', function ($p) use ($cari) {
+                    $p->where('nama_lengkap', 'like', "%{$cari}%")
+                      ->orWhere('nip', 'like', "%{$cari}%");
+                });
+            })
+            ->orderBy('tgl_absen', 'desc')
+            ->paginate(15)
+            ->withQueryString();
+
+        $statistik = [
+            'total_hadir' => Absensi::whereMonth('tgl_absen', $bulan)->whereYear('tgl_absen', $tahun)->where('status', 'Hadir')->count(),
+            'total_izin'  => Absensi::whereMonth('tgl_absen', $bulan)->whereYear('tgl_absen', $tahun)->where('status', 'Izin')->count(),
+            'total_sakit' => Absensi::whereMonth('tgl_absen', $bulan)->whereYear('tgl_absen', $tahun)->where('status', 'Sakit')->count(),
+            'total_alpa'  => Absensi::whereMonth('tgl_absen', $bulan)->whereYear('tgl_absen', $tahun)->where('status', 'Alpa')->count(),
+        ];
+
+        return Inertia::render('Admin/Laporan', [
+            'laporan'   => $laporan,
+            'statistik' => $statistik,
+            'filter'    => [
+                'bulan' => (string) (int) $bulan,
+                'tahun' => (string) $tahun,
+                'cari'  => $cari,
+            ],
+        ]);
+    }
+
+    // ==========================================
+    // KELOLA JADWAL MENGAJAR
+    // ==========================================
+    public function jadwalIndex(Request $request)
+    {
+        $hari = $request->input('hari');
+        $cari = $request->input('cari');
+
+        $jadwal = JadwalMengajar::with('pegawai:nip,nama_lengkap')
+            ->when($hari, fn ($q, $hari) => $q->where('hari', $hari))
+            ->when($cari, function ($q, $cari) {
+                $q->where('mata_pelajaran', 'like', "%{$cari}%")
+                  ->orWhere('kelas', 'like', "%{$cari}%")
+                  ->orWhereHas('pegawai', fn ($p) => $p->where('nama_lengkap', 'like', "%{$cari}%"));
+            })
+            ->orderBy('hari')
+            ->orderBy('jam_mulai')
+            ->paginate(10)
+            ->withQueryString();
+
+        $daftarGuru = Pegawai::select('nip', 'nama_lengkap')->orderBy('nama_lengkap')->get();
+
+        return Inertia::render('Admin/Jadwal', [
+            'jadwal'     => $jadwal,
+            'daftarGuru' => $daftarGuru,
+            'filter'     => [
+                'hari' => $hari,
+                'cari' => $cari,
+            ],
+        ]);
+    }
+
+    public function jadwalStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nip'            => ['required', 'exists:pegawai,nip'],
+            'hari'           => ['required', Rule::in(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'])],
+            'jam_mulai'      => ['required', 'date_format:H:i'],
+            'jam_selesai'    => ['required', 'date_format:H:i', 'after:jam_mulai'],
+            'mata_pelajaran' => ['required', 'string', 'max:100'],
+            'kelas'          => ['required', 'string', 'max:50'],
+        ], [
+            'nip.required'            => 'Guru pengajar wajib dipilih.',
+            'nip.exists'              => 'Guru tidak ditemukan.',
+            'hari.required'           => 'Hari mengajar wajib dipilih.',
+            'jam_mulai.required'      => 'Jam mulai wajib diisi.',
+            'jam_selesai.required'    => 'Jam selesai wajib diisi.',
+            'jam_selesai.after'       => 'Jam selesai harus lebih akhir dari jam mulai.',
+            'mata_pelajaran.required' => 'Mata pelajaran wajib diisi.',
+            'kelas.required'          => 'Kelas wajib diisi.',
+        ]);
+
+        $validated['is_active'] = true;
+        JadwalMengajar::create($validated);
+
+        return back()->with('success', 'Jadwal pelajaran berhasil ditambahkan.');
+    }
+
+    public function jadwalDestroy(JadwalMengajar $jadwal)
+    {
+        $jadwal->delete();
+        return back()->with('success', 'Jadwal pelajaran berhasil dihapus.');
+    }
+
+    // ==========================================
+    // KELOLA IZIN (VALIDASI)
+    // ==========================================
     public function izinIndex(Request $request)
     {
         $filter = [
@@ -84,7 +301,6 @@ class AdminController extends Controller
         ]);
     }
 
-    // Setujui / tolak pengajuan izin
     public function izinUpdate(Request $request, Izin $izin)
     {
         if ($izin->status_approval !== 'pending') {

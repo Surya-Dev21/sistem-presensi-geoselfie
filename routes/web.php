@@ -67,6 +67,22 @@ Route::middleware(['auth:pegawai'])->group(function () {
 // Rute Khusus Admin
 Route::middleware(['auth:admin'])->prefix('admin')->group(function () { 
     Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+
+    // 1. Kelola Guru
+    Route::get('/pegawai', [AdminController::class, 'pegawaiIndex'])->name('admin.pegawai.index');
+    Route::post('/pegawai', [AdminController::class, 'pegawaiStore'])->name('admin.pegawai.store');
+    Route::put('/pegawai/{pegawai}', [AdminController::class, 'pegawaiUpdate'])->name('admin.pegawai.update');
+    Route::delete('/pegawai/{pegawai}', [AdminController::class, 'pegawaiDestroy'])->name('admin.pegawai.destroy');
+
+    // 2. Kelola Izin
     Route::get('/izin', [AdminController::class, 'izinIndex'])->name('admin.izin.index');
     Route::patch('/izin/{izin}', [AdminController::class, 'izinUpdate'])->name('admin.izin.update');
+
+    // 3. Kelola Laporan Absen
+    Route::get('/laporan', [AdminController::class, 'laporanIndex'])->name('admin.laporan.index');
+
+    // 4. Kelola Jadwal Pelajaran
+    Route::get('/jadwal', [AdminController::class, 'jadwalIndex'])->name('admin.jadwal.index');
+    Route::post('/jadwal', [AdminController::class, 'jadwalStore'])->name('admin.jadwal.store');
+    Route::delete('/jadwal/{jadwal}', [AdminController::class, 'jadwalDestroy'])->name('admin.jadwal.destroy');
 });

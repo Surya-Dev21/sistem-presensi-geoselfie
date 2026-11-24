@@ -1,6 +1,15 @@
 import React, { useState } from "react";
 import { Link, router, usePage } from "@inertiajs/react";
-import { FiFileText, FiGrid, FiLogOut, FiMenu, FiX } from "react-icons/fi";
+import {
+    FiBarChart2,
+    FiCalendar,
+    FiFileText,
+    FiGrid,
+    FiLogOut,
+    FiMenu,
+    FiUsers,
+    FiX,
+} from "react-icons/fi";
 import { FlashAlert } from "@/components/flash-alert";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { confirmAction } from "@/lib/swal";
@@ -22,7 +31,10 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
 
     const navItems = [
         { label: "Dashboard", href: "/admin/dashboard", Icon: FiGrid, active: path.startsWith("/admin/dashboard") },
+        { label: "Data Guru", href: "/admin/pegawai", Icon: FiUsers, active: path.startsWith("/admin/pegawai") },
         { label: "Validasi Izin", href: "/admin/izin", Icon: FiFileText, active: path.startsWith("/admin/izin") },
+        { label: "Laporan Absen", href: "/admin/laporan", Icon: FiBarChart2, active: path.startsWith("/admin/laporan") },
+        { label: "Jadwal Pelajaran", href: "/admin/jadwal", Icon: FiCalendar, active: path.startsWith("/admin/jadwal") },
     ];
 
     const logout = async () => {
@@ -98,44 +110,44 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                         onClick={logout}
                         className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white/10 hover:bg-rose-600 text-xs font-bold transition"
                     >
-                        <FiLogOut className="h-4 w-4" aria-hidden="true" />
-                        Keluar Sistem
+                        <FiLogOut className="h-4 w-4" />
+                        Keluar
                     </button>
                 </div>
             </aside>
 
-            <main className="flex-1 flex flex-col min-w-0">
-                <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 px-3 sm:px-5 sticky top-0 z-30">
-                    <div className="flex items-center gap-2 min-w-0">
+            <div className="flex-1 flex flex-col min-w-0">
+                <header className="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4">
+                    <div className="flex items-center gap-2">
                         <button
                             type="button"
                             onClick={() => setOpen(true)}
-                            className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                            className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                             aria-label="Buka menu"
                         >
-                            <FiMenu className="h-4.5 w-4.5" />
+                            <FiMenu className="h-5 w-5" />
                         </button>
-                        <h1 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white truncate">
-                            {title ?? "Dashboard Admin"}
+                        <h1 className="text-sm font-black text-slate-800 dark:text-white truncate">
+                            {title ?? "Panel Admin"}
                         </h1>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <ThemeToggle className="h-8 w-8 p-0 flex items-center justify-center" />
-                        <span className="hidden sm:block text-xs font-semibold text-slate-500 dark:text-slate-400 max-w-[160px] truncate">
-                            {nama}
-                        </span>
-                        <span className="h-8 w-8 rounded-full bg-blue-800 text-white text-xs font-bold flex items-center justify-center">
-                            {nama.charAt(0).toUpperCase()}
-                        </span>
+                    <div className="flex items-center gap-3">
+                        <ThemeToggle />
+                        <div className="text-right hidden sm:block">
+                            <p className="text-xs font-bold text-slate-800 dark:text-white leading-tight">
+                                {nama}
+                            </p>
+                            <p className="text-[10px] text-slate-400">Administrator</p>
+                        </div>
                     </div>
                 </header>
 
-                <div className="flex-1 p-3 sm:p-5 overflow-y-auto">
+                <main className="flex-1 p-4 sm:p-6 space-y-4 max-w-7xl w-full mx-auto">
                     <FlashAlert />
-                    <div className="max-w-5xl mx-auto space-y-3.5">{children}</div>
-                </div>
-            </main>
+                    {children}
+                </main>
+            </div>
         </div>
     );
 }
