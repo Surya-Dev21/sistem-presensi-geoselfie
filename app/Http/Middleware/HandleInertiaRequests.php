@@ -91,6 +91,29 @@ class HandleInertiaRequests extends Middleware
                     ])
                     ->values();
             })() : [],
+
+            // Notifikasi admin: pengajuan izin yang masih menunggu validasi
+            'notifikasiAdmin' => fn () => Auth::guard('admin')->check()
+                ? \App\Models\Izin::with('pegawai:nip,nama_lengkap')
+                    ->where('status_approval', 'pending')
+                    ->latest()
+                    ->limit(5)
+                    ->get()
+                    ->map(fn ($i) => [
+                        'id'          => $i->id,
+                        'nama'        => $i->pegawai?->nama_lengkap ?? $i->nip,
+                        'jenis'       => $i->status === 'sakit' ? 'Sakit' : 'Izin',
+                        'tgl_mulai'   => $i->tgl_mulai?->format('Y-m-d'),
+                        'tgl_selesai' => $i->tgl_selesai?->format('Y-m-d'),
+                        'waktu'       => $i->created_at?->diffForHumans(),
+                    ])
+                    ->values()
+                : [],
+
+            // Jumlah total (bukan hanya 5 teratas) untuk badge lonceng
+            'jumlahIzinPending' => fn () => Auth::guard('admin')->check()
+                ? \App\Models\Izin::where('status_approval', 'pending')->count()
+                : 0,
         ];
     }
 }

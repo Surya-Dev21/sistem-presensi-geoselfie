@@ -85,4 +85,8 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     Route::get('/jadwal', [AdminController::class, 'jadwalIndex'])->name('admin.jadwal.index');
     Route::post('/jadwal', [AdminController::class, 'jadwalStore'])->name('admin.jadwal.store');
     Route::delete('/jadwal/{jadwal}', [AdminController::class, 'jadwalDestroy'])->name('admin.jadwal.destroy');
+
+    // 5. Profil Admin
+    Route::get('/profil', [AdminController::class, 'profilEdit'])->name('admin.profil.edit');
+    Route::put('/profil', [AdminController::class, 'profilUpdate'])->name('admin.profil.update');
 });
