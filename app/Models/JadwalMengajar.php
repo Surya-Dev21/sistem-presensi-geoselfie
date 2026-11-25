@@ -18,4 +18,9 @@ class JadwalMengajar extends Model
         'kelas',
         'is_active',
     ];
+
+    public function pegawai()
+    {
+        return $this->belongsTo(Pegawai::class, 'nip', 'nip');
+    }
 }

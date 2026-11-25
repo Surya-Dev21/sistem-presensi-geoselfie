@@ -3,6 +3,7 @@ import { Head, router, useForm } from "@inertiajs/react";
 import {
     FiCalendar,
     FiClock,
+    FiEdit2,
     FiPlus,
     FiSearch,
     FiTrash2,
@@ -15,6 +16,7 @@ export default function JadwalIndex({ jadwal, daftarGuru = [], filter = {} }) {
     const [hari, setHari] = useState(filter.hari || "");
     const [cari, setCari] = useState(filter.cari || "");
     const [modalBuka, setModalBuka] = useState(false);
+    const [editId, setEditId] = useState(null);
 
     const form = useForm({
         nip: "",
@@ -32,15 +34,52 @@ export default function JadwalIndex({ jadwal, daftarGuru = [], filter = {} }) {
         router.get("/admin/jadwal", { hari, cari }, { preserveState: true, replace: true });
     };
 
+    const bukaTambah = () => {
+        setEditId(null);
+        form.reset();
+        form.clearErrors();
+        setModalBuka(true);
+    };
+
+    const bukaEdit = (j) => {
+        setEditId(j.id);
+        form.clearErrors();
+        form.setData({
+            nip: j.nip,
+            hari: j.hari,
+            jam_mulai: (j.jam_mulai || "").substring(0, 5),
+            jam_selesai: (j.jam_selesai || "").substring(0, 5),
+            mata_pelajaran: j.mata_pelajaran,
+            kelas: j.kelas,
+        });
+        setModalBuka(true);
+    };
+
+    const tutupModal = () => {
+        setModalBuka(false);
+        setEditId(null);
+        form.reset();
+        form.clearErrors();
+    };
+
     const simpan = (e) => {
         e.preventDefault();
-        form.post("/admin/jadwal", {
+        const opsi = {
             onSuccess: () => {
-                setModalBuka(false);
-                form.reset();
-                toastSuccess("Jadwal pelajaran berhasil ditambahkan.");
+                toastSuccess(
+                    editId
+                        ? "Jadwal pelajaran berhasil diperbarui."
+                        : "Jadwal pelajaran berhasil ditambahkan."
+                );
+                tutupModal();
             },
-        });
+        };
+
+        if (editId) {
+            form.put(`/admin/jadwal/${editId}`, opsi);
+        } else {
+            form.post("/admin/jadwal", opsi);
+        }
     };
 
     const hapus = async (j) => {
@@ -66,7 +105,7 @@ export default function JadwalIndex({ jadwal, daftarGuru = [], filter = {} }) {
                     <div>
                         <h2 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
                             <FiCalendar className="text-blue-800 dark:text-blue-400" />
-                            Jadwal Pelajaran Sekolah
+                            Jadwal Pelajaran
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                             Atur jam mengajar guru sebagai acuan batas jam presensi masuk guru setiap harinya.
@@ -75,11 +114,7 @@ export default function JadwalIndex({ jadwal, daftarGuru = [], filter = {} }) {
 
                     <button
                         type="button"
-                        onClick={() => {
-                            form.reset();
-                            form.clearErrors();
-                            setModalBuka(true);
-                        }}
+                        onClick={bukaTambah}
                         className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-800 hover:bg-blue-900 text-white text-xs font-bold transition shadow-xs"
                     >
                         <FiPlus className="h-4 w-4" />
@@ -160,11 +195,19 @@ export default function JadwalIndex({ jadwal, daftarGuru = [], filter = {} }) {
                                                     NIP {j.nip}
                                                 </span>
                                             </td>
-                                            <td className="py-3 px-4 text-right">
+                                            <td className="py-3 px-4 text-right space-x-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => bukaEdit(j)}
+                                                    className="p-1.5 rounded-lg text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition inline-flex items-center"
+                                                    title="Edit Jadwal"
+                                                >
+                                                    <FiEdit2 className="h-4 w-4" />
+                                                </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => hapus(j)}
-                                                    className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition"
+                                                    className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950 transition inline-flex items-center"
                                                     title="Hapus Jadwal"
                                                 >
                                                     <FiTrash2 className="h-4 w-4" />
@@ -207,18 +250,18 @@ export default function JadwalIndex({ jadwal, daftarGuru = [], filter = {} }) {
                 </div>
             </div>
 
-            {/* Modal Tambah Jadwal */}
+            {/* Modal Tambah / Edit Jadwal */}
             {modalBuka && (
                 <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-md w-full overflow-hidden">
                         <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                             <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                 <FiClock className="text-blue-800 dark:text-blue-400" />
-                                Tambah Jadwal Mengajar
+                                {editId ? "Edit Jadwal Mengajar" : "Tambah Jadwal Mengajar"}
                             </h3>
                             <button
                                 type="button"
-                                onClick={() => setModalBuka(false)}
+                                onClick={tutupModal}
                                 className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                             >
                                 <FiX className="h-4 w-4" />
@@ -324,7 +367,7 @@ export default function JadwalIndex({ jadwal, daftarGuru = [], filter = {} }) {
                             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                                 <button
                                     type="button"
-                                    onClick={() => setModalBuka(false)}
+                                    onClick={tutupModal}
                                     className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-800"
                                 >
                                     Batal
@@ -334,7 +377,11 @@ export default function JadwalIndex({ jadwal, daftarGuru = [], filter = {} }) {
                                     disabled={form.processing}
                                     className="px-4 py-2 rounded-xl bg-blue-800 hover:bg-blue-900 text-white font-bold disabled:opacity-60"
                                 >
-                                    {form.processing ? "Menyimpan..." : "Simpan Jadwal"}
+                                    {form.processing
+                                        ? "Menyimpan..."
+                                        : editId
+                                          ? "Simpan Perubahan"
+                                          : "Simpan Jadwal"}
                                 </button>
                             </div>
                         </form>
