@@ -298,6 +298,31 @@ class AdminController extends Controller
         return back()->with('success', 'Jadwal pelajaran berhasil ditambahkan.');
     }
 
+    public function jadwalUpdate(Request $request, JadwalMengajar $jadwal)
+    {
+        $validated = $request->validate([
+            'nip'            => ['required', 'exists:pegawai,nip'],
+            'hari'           => ['required', Rule::in(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'])],
+            'jam_mulai'      => ['required', 'date_format:H:i'],
+            'jam_selesai'    => ['required', 'date_format:H:i', 'after:jam_mulai'],
+            'mata_pelajaran' => ['required', 'string', 'max:100'],
+            'kelas'          => ['required', 'string', 'max:50'],
+        ], [
+            'nip.required'            => 'Guru pengajar wajib dipilih.',
+            'nip.exists'              => 'Guru tidak ditemukan.',
+            'hari.required'           => 'Hari mengajar wajib dipilih.',
+            'jam_mulai.required'      => 'Jam mulai wajib diisi.',
+            'jam_selesai.required'    => 'Jam selesai wajib diisi.',
+            'jam_selesai.after'       => 'Jam selesai harus lebih akhir dari jam mulai.',
+            'mata_pelajaran.required' => 'Mata pelajaran wajib diisi.',
+            'kelas.required'          => 'Kelas wajib diisi.',
+        ]);
+
+        $jadwal->update($validated);
+
+        return back();
+    }
+
     public function jadwalDestroy(JadwalMengajar $jadwal)
     {
         $jadwal->delete();

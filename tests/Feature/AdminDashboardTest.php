@@ -3,6 +3,7 @@
 use App\Models\Absensi;
 use App\Models\Admin;
 use App\Models\Izin;
+use App\Models\JadwalMengajar;
 use App\Models\Pegawai;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -145,6 +146,59 @@ test('ganti password admin wajib password lama yang benar', function () {
         ->assertSessionHasNoErrors();
 
     expect(Hash::check('rahasia123', $admin->fresh()->password))->toBeTrue();
+});
+
+test('halaman jadwal memuat relasi pegawai', function () {
+    $admin = adminDashUji();
+    $guru = guruDashUji();
+
+    JadwalMengajar::create([
+        'nip' => $guru->nip,
+        'hari' => 'Senin',
+        'jam_mulai' => '07:00',
+        'jam_selesai' => '08:30',
+        'mata_pelajaran' => 'Matematika',
+        'kelas' => 'X IPA 1',
+    ]);
+
+    $this->actingAs($admin, 'admin')
+        ->get('/admin/jadwal')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/Jadwal')
+            ->where('jadwal.data.0.pegawai.nama_lengkap', 'Budi Santoso'));
+});
+
+test('admin dapat mengubah jadwal pelajaran', function () {
+    $admin = adminDashUji();
+    $guru = guruDashUji();
+
+    $jadwal = JadwalMengajar::create([
+        'nip' => $guru->nip,
+        'hari' => 'Senin',
+        'jam_mulai' => '07:00',
+        'jam_selesai' => '08:30',
+        'mata_pelajaran' => 'Matematika',
+        'kelas' => 'X IPA 1',
+    ]);
+
+    $this->actingAs($admin, 'admin')
+        ->put("/admin/jadwal/{$jadwal->id}", [
+            'nip' => $guru->nip,
+            'hari' => 'Rabu',
+            'jam_mulai' => '09:00',
+            'jam_selesai' => '10:30',
+            'mata_pelajaran' => 'Fisika',
+            'kelas' => 'XI IPA 2',
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $jadwal->refresh();
+    expect($jadwal->hari)->toBe('Rabu');
+    expect($jadwal->mata_pelajaran)->toBe('Fisika');
+    expect($jadwal->kelas)->toBe('XI IPA 2');
+    expect(substr($jadwal->jam_mulai, 0, 5))->toBe('09:00');
 });
 
 test('statistik presensi bisa dilihat per bulan dan per tahun', function () {

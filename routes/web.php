@@ -84,6 +84,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
     // 4. Kelola Jadwal Pelajaran
     Route::get('/jadwal', [AdminController::class, 'jadwalIndex'])->name('admin.jadwal.index');
     Route::post('/jadwal', [AdminController::class, 'jadwalStore'])->name('admin.jadwal.store');
+    Route::put('/jadwal/{jadwal}', [AdminController::class, 'jadwalUpdate'])->name('admin.jadwal.update');
     Route::delete('/jadwal/{jadwal}', [AdminController::class, 'jadwalDestroy'])->name('admin.jadwal.destroy');
 
     // 5. Profil Admin
