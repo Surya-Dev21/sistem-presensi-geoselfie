@@ -15,7 +15,7 @@ use Inertia\Inertia;
 
 class AdminController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $totalPegawai = Pegawai::count();
         $today = date('Y-m-d');
@@ -41,23 +41,63 @@ class AdminController extends Controller
                 'status'     => $a->status,
             ]);
 
-        // Tren presensi 7 hari terakhir (untuk chart dashboard)
-        $trenPresensi = collect(range(6, 0))->map(function (int $mundur) {
-            $tanggal = now('Asia/Jakarta')->subDays($mundur);
-            $perStatus = Absensi::where('tgl_absen', $tanggal->toDateString())
-                ->selectRaw('status, count(*) as jumlah')
-                ->groupBy('status')
-                ->pluck('jumlah', 'status');
+        $periode = $request->input('periode', 'mingguan');
+        if (!in_array($periode, ['mingguan', 'bulanan', 'tahunan'], true)) {
+            $periode = 'mingguan';
+        }
 
-            return [
-                'tanggal' => $tanggal->toDateString(),
-                'label'   => ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][$tanggal->dayOfWeek],
-                'hadir'   => (int) ($perStatus['Hadir'] ?? 0),
-                'izin'    => (int) ($perStatus['Izin'] ?? 0),
-                'sakit'   => (int) ($perStatus['Sakit'] ?? 0),
-                'alpa'    => (int) ($perStatus['Alpa'] ?? 0),
-            ];
-        })->values();
+        $trenPresensi = match ($periode) {
+            'bulanan' => collect(range(1, now('Asia/Jakarta')->daysInMonth))->map(function (int $hari) {
+                $tanggal = now('Asia/Jakarta')->startOfMonth()->addDays($hari - 1);
+                $perStatus = Absensi::where('tgl_absen', $tanggal->toDateString())
+                    ->selectRaw('status, count(*) as jumlah')
+                    ->groupBy('status')
+                    ->pluck('jumlah', 'status');
+
+                return [
+                    'tanggal' => $tanggal->toDateString(),
+                    'label'   => (string) $hari,
+                    'hadir'   => (int) ($perStatus['Hadir'] ?? 0),
+                    'izin'    => (int) ($perStatus['Izin'] ?? 0),
+                    'sakit'   => (int) ($perStatus['Sakit'] ?? 0),
+                    'alpa'    => (int) ($perStatus['Alpa'] ?? 0),
+                ];
+            })->values(),
+
+            'tahunan' => collect(range(1, 12))->map(function (int $bulan) {
+                $tahun = now('Asia/Jakarta')->year;
+                $perStatus = Absensi::whereYear('tgl_absen', $tahun)
+                    ->whereMonth('tgl_absen', $bulan)
+                    ->selectRaw('status, count(*) as jumlah')
+                    ->groupBy('status')
+                    ->pluck('jumlah', 'status');
+
+                return [
+                    'label' => ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][$bulan - 1],
+                    'hadir' => (int) ($perStatus['Hadir'] ?? 0),
+                    'izin'  => (int) ($perStatus['Izin'] ?? 0),
+                    'sakit' => (int) ($perStatus['Sakit'] ?? 0),
+                    'alpa'  => (int) ($perStatus['Alpa'] ?? 0),
+                ];
+            })->values(),
+
+            default => collect(range(6, 0))->map(function (int $mundur) {
+                $tanggal = now('Asia/Jakarta')->subDays($mundur);
+                $perStatus = Absensi::where('tgl_absen', $tanggal->toDateString())
+                    ->selectRaw('status, count(*) as jumlah')
+                    ->groupBy('status')
+                    ->pluck('jumlah', 'status');
+
+                return [
+                    'tanggal' => $tanggal->toDateString(),
+                    'label'   => ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][$tanggal->dayOfWeek],
+                    'hadir'   => (int) ($perStatus['Hadir'] ?? 0),
+                    'izin'    => (int) ($perStatus['Izin'] ?? 0),
+                    'sakit'   => (int) ($perStatus['Sakit'] ?? 0),
+                    'alpa'    => (int) ($perStatus['Alpa'] ?? 0),
+                ];
+            })->values(),
+        };
 
         return Inertia::render('Admin/Dashboard', [
             'totalPegawai'    => $totalPegawai,
@@ -67,6 +107,7 @@ class AdminController extends Controller
             'persentaseHadir' => $persentaseHadir,
             'presensiHariIni' => $presensiHariIni,
             'trenPresensi'    => $trenPresensi,
+            'periode'         => $periode,
         ]);
     }
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import {
     FiAlertCircle,
     FiArrowRight,
@@ -64,6 +64,7 @@ export default function Dashboard({
     persentaseHadir = 0,
     presensiHariIni = [],
     trenPresensi = [],
+    periode = "mingguan",
 }) {
     const tanggalHariIni = new Date().toLocaleDateString("id-ID", {
         weekday: "long",
@@ -90,6 +91,32 @@ export default function Dashboard({
     const adaDataChart = trenPresensi.some(
         (d) => d.hadir + d.izin + d.sakit + d.alpa > 0
     );
+
+    const opsiPeriode = [
+        { value: "mingguan", label: "Mingguan" },
+        { value: "bulanan", label: "Bulanan" },
+        { value: "tahunan", label: "Tahunan" },
+    ];
+
+    const judulChart = {
+        mingguan: "Presensi 7 Hari Terakhir",
+        bulanan: "Presensi Bulan Ini",
+        tahunan: "Presensi Tahun Ini",
+    }[periode] ?? "Presensi 7 Hari Terakhir";
+
+    const subjudulChart =
+        periode === "tahunan"
+            ? "Jumlah catatan presensi guru per bulan."
+            : "Jumlah catatan presensi guru per hari.";
+
+    const gantiPeriode = (nilai) => {
+        if (nilai === periode) return;
+        router.get(
+            "/admin/dashboard",
+            { periode: nilai },
+            { preserveState: true, preserveScroll: true, only: ["trenPresensi", "periode"] }
+        );
+    };
 
     return (
         <AdminLayout title="Dashboard Admin">
@@ -131,29 +158,53 @@ export default function Dashboard({
                     ))}
                 </div>
 
-                {/* Chart presensi 7 hari */}
+                {/* Chart presensi */}
                 <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-                                Tren Presensi 7 Hari Terakhir
+                                {judulChart}
                             </h3>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                Jumlah catatan presensi guru per hari.
+                                {subjudulChart}
                             </p>
                         </div>
-                        <div className="flex items-center gap-3 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                            <LegendDot warna="#1e40af" label="Hadir" />
-                            <LegendDot warna="#60a5fa" label="Izin" />
-                            <LegendDot warna="#f43f5e" label="Sakit" />
+
+                        {/* Filter Periode */}
+                        <div
+                            className="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1"
+                            role="tablist"
+                            aria-label="Pilih Periode Statistik"
+                        >
+                            {opsiPeriode.map((o) => (
+                                <button
+                                    key={o.value}
+                                    type="button"
+                                    onClick={() => gantiPeriode(o.value)}
+                                    aria-pressed={periode === o.value}
+                                    className={`h-7 px-3 rounded-lg text-xs font-bold transition ${
+                                        periode === o.value
+                                            ? "bg-white dark:bg-slate-700 text-blue-800 dark:text-white shadow-xs"
+                                            : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                    }`}
+                                >
+                                    {o.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    <div className="h-64 w-full mt-4 text-slate-400">
+                    <div className="mt-3 flex items-center gap-3 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                        <LegendDot warna="#1e40af" label="Hadir" />
+                        <LegendDot warna="#60a5fa" label="Izin" />
+                        <LegendDot warna="#f43f5e" label="Sakit" />
+                    </div>
+
+                    <div className="h-64 w-full mt-2 text-slate-400">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 data={trenPresensi}
-                                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+                                margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
                             >
                                 <CartesianGrid
                                     strokeDasharray="3 3"
@@ -165,6 +216,7 @@ export default function Dashboard({
                                     dataKey="label"
                                     tickLine={false}
                                     axisLine={false}
+                                    interval={periode === "bulanan" ? 4 : 0}
                                     tick={{ fill: "currentColor", fontSize: 10 }}
                                 />
                                 <YAxis
@@ -178,16 +230,16 @@ export default function Dashboard({
                                     cursor={{ fill: "currentColor", opacity: 0.06 }}
                                     content={<TooltipChart />}
                                 />
-                                <Bar dataKey="hadir" name="Hadir" fill="#1e40af" radius={[4, 4, 0, 0]} maxBarSize={18} />
-                                <Bar dataKey="izin" name="Izin" fill="#60a5fa" radius={[4, 4, 0, 0]} maxBarSize={18} />
-                                <Bar dataKey="sakit" name="Sakit" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                                <Bar dataKey="hadir" name="Hadir" fill="#1e40af" radius={[4, 4, 0, 0]} maxBarSize={periode === "bulanan" ? 12 : 18} />
+                                <Bar dataKey="izin" name="Izin" fill="#60a5fa" radius={[4, 4, 0, 0]} maxBarSize={periode === "bulanan" ? 12 : 18} />
+                                <Bar dataKey="sakit" name="Sakit" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={periode === "bulanan" ? 12 : 18} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
 
                     {!adaDataChart && (
                         <p className="text-center text-[11px] text-slate-400 mt-2">
-                            Belum ada data presensi pada 7 hari terakhir.
+                            Belum ada data presensi pada periode ini.
                         </p>
                     )}
                 </section>
@@ -244,7 +296,8 @@ export default function Dashboard({
                         <table className="w-full text-left border-collapse text-xs">
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    <th className="py-2.5 px-4">Guru</th>
+                                    <th className="py-2.5 px-4">Nama Guru</th>
+                                    <th className="py-2.5 px-4">NIP</th>
                                     <th className="py-2.5 px-4">Masuk</th>
                                     <th className="py-2.5 px-4">Pulang</th>
                                     <th className="py-2.5 px-4">Status</th>
@@ -254,13 +307,11 @@ export default function Dashboard({
                                 {presensiHariIni.length > 0 ? (
                                     presensiHariIni.map((row) => (
                                         <tr key={row.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-                                            <td className="py-3 px-4">
-                                                <p className="font-bold text-slate-800 dark:text-white">
-                                                    {row.nama}
-                                                </p>
-                                                <span className="block text-[10px] text-slate-400 font-mono font-normal">
-                                                    NIP {row.nip}
-                                                </span>
+                                            <td className="py-3 px-4 font-bold text-slate-800 dark:text-white">
+                                                {row.nama}
+                                            </td>
+                                            <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">
+                                                {row.nip}
                                             </td>
                                             <td className="py-3 px-4 font-mono font-semibold text-slate-600 dark:text-slate-300">
                                                 {row.jam_masuk ? `${row.jam_masuk} WIB` : "-"}
@@ -270,9 +321,8 @@ export default function Dashboard({
                                             </td>
                                             <td className="py-3 px-4">
                                                 <span
-                                                    className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                                        WARNA_STATUS[row.status] ?? WARNA_STATUS.Alpa
-                                                    }`}
+                                                    className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${WARNA_STATUS[row.status] ?? WARNA_STATUS.Alpa
+                                                        }`}
                                                 >
                                                     {row.status}
                                                 </span>
@@ -281,7 +331,7 @@ export default function Dashboard({
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={4} className="py-6 text-center text-slate-400 text-xs">
+                                        <td colSpan={5} className="py-6 text-center text-slate-400 text-xs">
                                             Belum ada presensi yang tercatat untuk hari ini.
                                         </td>
                                     </tr>
