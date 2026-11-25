@@ -1,16 +1,60 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Head, Link } from "@inertiajs/react";
 import {
-    FiUsers,
+    FiAlertCircle,
+    FiArrowRight,
+    FiBarChart2,
+    FiCalendar,
     FiCheckCircle,
     FiClock,
-    FiAlertCircle,
     FiFileText,
-    FiCalendar,
-    FiBarChart2,
-    FiArrowRight
+    FiUsers,
 } from "react-icons/fi";
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from "recharts";
 import AdminLayout from "@/components/admin-layout";
+
+const WARNA_STATUS = {
+    Hadir: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
+    Izin: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800",
+    Sakit: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800",
+    Alpa: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
+};
+
+function TooltipChart({ active, payload, label }) {
+    if (!active || !payload?.length) return null;
+
+    return (
+        <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] shadow-lg dark:border-slate-700 dark:bg-slate-800">
+            <p className="font-bold text-slate-700 dark:text-white">{label}</p>
+            {payload.map((item) => (
+                <p key={item.dataKey} className="text-slate-500 dark:text-slate-300">
+                    <span
+                        className="mr-1.5 inline-block h-2 w-2 rounded-full"
+                        style={{ background: item.color }}
+                    />
+                    {item.name}: <span className="font-bold">{item.value}</span>
+                </p>
+            ))}
+        </div>
+    );
+}
+
+function LegendDot({ warna, label }) {
+    return (
+        <span className="inline-flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full" style={{ background: warna }} />
+            {label}
+        </span>
+    );
+}
 
 export default function Dashboard({
     totalPegawai = 0,
@@ -19,162 +63,180 @@ export default function Dashboard({
     pendingIzin = 0,
     persentaseHadir = 0,
     presensiHariIni = [],
+    trenPresensi = [],
 }) {
+    const tanggalHariIni = new Date().toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Asia/Jakarta",
+    });
+
     const stats = [
-        {
-            label: "Total Guru",
-            value: totalPegawai,
-            icon: FiUsers,
-            color: "text-blue-800 dark:text-blue-400",
-            bg: "bg-blue-50 dark:bg-blue-950/50"
-        },
-        {
-            label: "Hadir Hari Ini",
-            value: `${hadirHariIni} (${persentaseHadir}%)`,
-            icon: FiCheckCircle,
-            color: "text-emerald-700 dark:text-emerald-400",
-            bg: "bg-emerald-50 dark:bg-emerald-950/50"
-        },
-        {
-            label: "Izin / Sakit",
-            value: izinHariIni,
-            icon: FiClock,
-            color: "text-blue-700 dark:text-blue-300",
-            bg: "bg-blue-50 dark:bg-blue-950/50"
-        },
-        {
-            label: "Izin Menunggu",
-            value: pendingIzin,
-            icon: FiAlertCircle,
-            color: "text-rose-600 dark:text-rose-400",
-            bg: "bg-rose-50 dark:bg-rose-950/50"
-        },
+        { label: "Total Guru", value: totalPegawai, icon: FiUsers, color: "text-blue-800 dark:text-blue-300" },
+        { label: "Hadir Hari Ini", value: `${hadirHariIni} (${persentaseHadir}%)`, icon: FiCheckCircle, color: "text-emerald-700 dark:text-emerald-400" },
+        { label: "Izin / Sakit", value: izinHariIni, icon: FiClock, color: "text-blue-700 dark:text-blue-300" },
+        { label: "Menunggu Validasi", value: pendingIzin, icon: FiAlertCircle, color: "text-rose-600 dark:text-rose-400" },
     ];
 
     const quickActions = [
-        {
-            href: "/admin/pegawai",
-            icon: FiUsers,
-            label: "Kelola Data Guru",
-            desc: "Tambah, edit, & hapus data guru/pegawai.",
-        },
-        {
-            href: "/admin/izin",
-            icon: FiFileText,
-            label: "Validasi Izin",
-            desc: "Persetujuan permohonan izin & sakit.",
-        },
-        {
-            href: "/admin/laporan",
-            icon: FiBarChart2,
-            label: "Laporan Absensi",
-            desc: "Rekapitulasi kehadiran bulanan guru.",
-        },
-        {
-            href: "/admin/jadwal",
-            icon: FiCalendar,
-            label: "Jadwal Pelajaran",
-            desc: "Pengaturan jadwal mata pelajaran kelas.",
-        },
+        { href: "/admin/pegawai", icon: FiUsers, label: "Kelola Data Guru" },
+        { href: "/admin/izin", icon: FiFileText, label: "Validasi Izin" },
+        { href: "/admin/laporan", icon: FiBarChart2, label: "Laporan Absensi" },
+        { href: "/admin/jadwal", icon: FiCalendar, label: "Jadwal Pelajaran" },
     ];
 
-    const [waktu, setWaktu] = useState(null);
-    useEffect(() => {
-        setWaktu(new Date());
-        const t = setInterval(() => setWaktu(new Date()), 1000);
-        return () => clearInterval(t);
-    }, []);
-
-    const formatTanggal = waktu
-        ? waktu.toLocaleDateString("id-ID", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-              timeZone: "Asia/Jakarta",
-          })
-        : "Memuat tanggal...";
+    const adaDataChart = trenPresensi.some(
+        (d) => d.hadir + d.izin + d.sakit + d.alpa > 0
+    );
 
     return (
-        <AdminLayout title="Dashboard Administrator">
+        <AdminLayout title="Dashboard Admin">
             <Head title="Dashboard Admin - SIPRES Guru" />
 
-            <div className="space-y-4">
-                {/* Hero Banner Elegan */}
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900 text-white p-5 sm:p-6 shadow-sm border border-blue-800">
-                    <div className="relative z-10 max-w-2xl space-y-1.5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/15 text-blue-100 uppercase tracking-widest">
-                            Panel Administrator &middot; {formatTanggal}
-                        </span>
-                        <h2 className="text-lg sm:text-xl font-black tracking-tight leading-tight">
-                            Selamat Datang di Portal Manajemen SIPRES
-                        </h2>
-                        <p className="text-xs text-blue-100 leading-relaxed">
-                            Pantau tingkat kehadiran guru, validasi permohonan izin, dan kelola jadwal sekolah.
-                        </p>
-                    </div>
+            <div className="space-y-5">
+                {/* Sapaan (tanpa kartu biru) */}
+                <div className="space-y-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        {tanggalHariIni}
+                    </p>
+                    <h2 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                        Selamat datang kembali, Admin Sekolah!
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Ringkasan kehadiran guru dan aktivitas sekolah hari ini.
+                    </p>
                 </div>
 
-                {/* Grid Statistik Kehadiran Guru */}
+                {/* Statistik */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {stats.map(({ label, value, icon: Icon, color, bg }) => (
-                        <div key={label} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-3">
-                            <div className={`p-3 rounded-xl ${bg} ${color}`}>
-                                <Icon className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</p>
-                                <p className={`text-xl font-black mt-0.5 ${color}`}>{value}</p>
+                    {stats.map(({ label, value, icon: Icon, color }) => (
+                        <div
+                            key={label}
+                            className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center gap-3"
+                        >
+                            <span className={`h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center ${color}`}>
+                                <Icon className="h-5 w-5" aria-hidden="true" />
+                            </span>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    {label}
+                                </p>
+                                <p className="text-xl font-black mt-0.5 text-slate-800 dark:text-white">
+                                    {value}
+                                </p>
                             </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Akses Cepat Kelola Admin */}
+                {/* Chart presensi 7 hari */}
+                <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">
+                                Tren Presensi 7 Hari Terakhir
+                            </h3>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                Jumlah catatan presensi guru per hari.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+                            <LegendDot warna="#1e40af" label="Hadir" />
+                            <LegendDot warna="#60a5fa" label="Izin" />
+                            <LegendDot warna="#f43f5e" label="Sakit" />
+                        </div>
+                    </div>
+
+                    <div className="h-64 w-full mt-4 text-slate-400">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart
+                                data={trenPresensi}
+                                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+                            >
+                                <CartesianGrid
+                                    strokeDasharray="3 3"
+                                    vertical={false}
+                                    stroke="currentColor"
+                                    opacity={0.15}
+                                />
+                                <XAxis
+                                    dataKey="label"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fill: "currentColor", fontSize: 10 }}
+                                />
+                                <YAxis
+                                    allowDecimals={false}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    width={30}
+                                    tick={{ fill: "currentColor", fontSize: 10 }}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: "currentColor", opacity: 0.06 }}
+                                    content={<TooltipChart />}
+                                />
+                                <Bar dataKey="hadir" name="Hadir" fill="#1e40af" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                                <Bar dataKey="izin" name="Izin" fill="#60a5fa" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                                <Bar dataKey="sakit" name="Sakit" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={18} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {!adaDataChart && (
+                        <p className="text-center text-[11px] text-slate-400 mt-2">
+                            Belum ada data presensi pada 7 hari terakhir.
+                        </p>
+                    )}
+                </section>
+
+                {/* Menu pengelolaan */}
                 <div>
                     <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                        Menu Pengelolaan Utama
+                        Menu Pengelolaan
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        {quickActions.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl hover:border-blue-500 hover:shadow-sm transition flex flex-col justify-between gap-3"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="w-8 h-8 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 rounded-xl flex items-center justify-center group-hover:bg-blue-800 group-hover:text-white transition">
-                                        <item.icon className="h-4 w-4" />
+                        {quickActions.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl hover:border-blue-400 hover:shadow-sm transition flex items-center justify-between gap-3"
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <span className="h-8 w-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-blue-800 group-hover:text-white transition">
+                                            <Icon className="h-4 w-4" aria-hidden="true" />
+                                        </span>
+                                        <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
+                                            {item.label}
+                                        </p>
                                     </div>
-                                    <FiArrowRight className="h-4 w-4 text-slate-300 group-hover:text-blue-600 transition" />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-bold text-slate-800 dark:text-white group-hover:text-blue-700 transition">
-                                        {item.label}
-                                    </p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
-                                </div>
-                            </Link>
-                        ))}
+                                    <FiArrowRight className="h-4 w-4 text-slate-300 group-hover:text-blue-600 transition flex-shrink-0" />
+                                </Link>
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Tabel Ringkasan Presensi Hari Ini */}
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                {/* Presensi hari ini */}
+                <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
                         <div>
-                            <h3 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                            <h3 className="text-sm font-bold text-slate-800 dark:text-white">
                                 Presensi Terkini Hari Ini
                             </h3>
-                            <p className="text-[11px] text-slate-400">
-                                5 presensi guru yang terakhir masuk ke sistem hari ini.
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                5 presensi guru terakhir yang masuk.
                             </p>
                         </div>
                         <Link
                             href="/admin/laporan"
-                            className="text-xs font-bold text-blue-800 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                            className="text-xs font-bold text-blue-800 dark:text-blue-300 hover:underline inline-flex items-center gap-1 flex-shrink-0"
                         >
-                            Lihat Semua Laporan <FiArrowRight className="h-3 w-3" />
+                            Lihat Laporan <FiArrowRight className="h-3 w-3" />
                         </Link>
                     </div>
 
@@ -183,9 +245,8 @@ export default function Dashboard({
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                     <th className="py-2.5 px-4">Guru</th>
-                                    <th className="py-2.5 px-4">Jabatan</th>
-                                    <th className="py-2.5 px-4">Jam Masuk</th>
-                                    <th className="py-2.5 px-4">Jam Pulang</th>
+                                    <th className="py-2.5 px-4">Masuk</th>
+                                    <th className="py-2.5 px-4">Pulang</th>
                                     <th className="py-2.5 px-4">Status</th>
                                 </tr>
                             </thead>
@@ -193,21 +254,26 @@ export default function Dashboard({
                                 {presensiHariIni.length > 0 ? (
                                     presensiHariIni.map((row) => (
                                         <tr key={row.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
-                                            <td className="py-3 px-4 font-bold text-slate-800 dark:text-white">
-                                                {row.nama}
+                                            <td className="py-3 px-4">
+                                                <p className="font-bold text-slate-800 dark:text-white">
+                                                    {row.nama}
+                                                </p>
                                                 <span className="block text-[10px] text-slate-400 font-mono font-normal">
                                                     NIP {row.nip}
                                                 </span>
                                             </td>
-                                            <td className="py-3 px-4 text-slate-500 dark:text-slate-400">{row.jabatan}</td>
-                                            <td className="py-3 px-4 font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                                            <td className="py-3 px-4 font-mono font-semibold text-slate-600 dark:text-slate-300">
                                                 {row.jam_masuk ? `${row.jam_masuk} WIB` : "-"}
                                             </td>
-                                            <td className="py-3 px-4 font-mono font-semibold text-blue-600 dark:text-blue-400">
+                                            <td className="py-3 px-4 font-mono font-semibold text-slate-600 dark:text-slate-300">
                                                 {row.jam_keluar ? `${row.jam_keluar} WIB` : "-"}
                                             </td>
                                             <td className="py-3 px-4">
-                                                <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                                <span
+                                                    className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                                        WARNA_STATUS[row.status] ?? WARNA_STATUS.Alpa
+                                                    }`}
+                                                >
                                                     {row.status}
                                                 </span>
                                             </td>
@@ -215,7 +281,7 @@ export default function Dashboard({
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={5} className="py-6 text-center text-slate-400 text-xs">
+                                        <td colSpan={4} className="py-6 text-center text-slate-400 text-xs">
                                             Belum ada presensi yang tercatat untuk hari ini.
                                         </td>
                                     </tr>
@@ -223,7 +289,7 @@ export default function Dashboard({
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </section>
             </div>
         </AdminLayout>
     );

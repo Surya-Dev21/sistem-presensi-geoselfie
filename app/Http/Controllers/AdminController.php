@@ -7,6 +7,7 @@ use App\Models\Izin;
 use App\Models\JadwalMengajar;
 use App\Models\Pegawai;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -40,6 +41,24 @@ class AdminController extends Controller
                 'status'     => $a->status,
             ]);
 
+        // Tren presensi 7 hari terakhir (untuk chart dashboard)
+        $trenPresensi = collect(range(6, 0))->map(function (int $mundur) {
+            $tanggal = now('Asia/Jakarta')->subDays($mundur);
+            $perStatus = Absensi::where('tgl_absen', $tanggal->toDateString())
+                ->selectRaw('status, count(*) as jumlah')
+                ->groupBy('status')
+                ->pluck('jumlah', 'status');
+
+            return [
+                'tanggal' => $tanggal->toDateString(),
+                'label'   => ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][$tanggal->dayOfWeek],
+                'hadir'   => (int) ($perStatus['Hadir'] ?? 0),
+                'izin'    => (int) ($perStatus['Izin'] ?? 0),
+                'sakit'   => (int) ($perStatus['Sakit'] ?? 0),
+                'alpa'    => (int) ($perStatus['Alpa'] ?? 0),
+            ];
+        })->values();
+
         return Inertia::render('Admin/Dashboard', [
             'totalPegawai'    => $totalPegawai,
             'hadirHariIni'    => $hadirHariIni,
@@ -47,6 +66,7 @@ class AdminController extends Controller
             'pendingIzin'     => $pendingIzin,
             'persentaseHadir' => $persentaseHadir,
             'presensiHariIni' => $presensiHariIni,
+            'trenPresensi'    => $trenPresensi,
         ]);
     }
 
@@ -334,5 +354,65 @@ class AdminController extends Controller
                 ? 'Pengajuan izin disetujui.'
                 : 'Pengajuan izin ditolak.'
         );
+    }
+
+    // ==========================================
+    // PROFIL ADMIN
+    // ==========================================
+    public function profilEdit()
+    {
+        $admin = Auth::guard('admin')->user();
+
+        return Inertia::render('Admin/Profil', [
+            'admin' => [
+                'name'  => $admin->name,
+                'email' => $admin->email,
+            ],
+        ]);
+    }
+
+    public function profilUpdate(Request $request)
+    {
+        $admin = Auth::guard('admin')->user();
+
+        // `sometimes` agar form password (yang hanya mengirim field password)
+        // tidak ikut memvalidasi name/email yang tidak dikirim.
+        $validated = $request->validate([
+            'name'  => ['sometimes', 'required', 'string', 'max:150'],
+            'email' => [
+                'sometimes', 'required', 'email', 'max:100',
+                Rule::unique('admins', 'email')->ignore($admin->id),
+            ],
+            'password_lama' => ['nullable', 'required_with:password_baru', 'string'],
+            'password_baru' => ['nullable', 'string', 'min:6', 'confirmed'],
+        ], [
+            'name.required'            => 'Nama tidak boleh kosong.',
+            'email.required'           => 'Email tidak boleh kosong.',
+            'email.email'              => 'Format email tidak valid.',
+            'email.unique'             => 'Email tersebut sudah dipakai admin lain.',
+            'password_lama.required_with' => 'Password saat ini wajib diisi sebelum mengganti password.',
+            'password_baru.min'        => 'Password baru minimal 6 karakter.',
+            'password_baru.confirmed'  => 'Konfirmasi password baru tidak cocok.',
+        ]);
+
+        if (isset($validated['name'])) {
+            $admin->name = trim(strip_tags($validated['name']));
+        }
+        if (isset($validated['email'])) {
+            $admin->email = $validated['email'];
+        }
+
+        if ($request->filled('password_baru')) {
+            if (!Hash::check($request->password_lama, $admin->password)) {
+                return back()->withErrors([
+                    'password_lama' => 'Password saat ini yang Anda masukkan salah.',
+                ]);
+            }
+            $admin->password = Hash::make($request->password_baru);
+        }
+
+        $admin->save();
+
+        return back();
     }
 }
