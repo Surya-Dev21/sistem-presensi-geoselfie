@@ -146,3 +146,29 @@ test('ganti password admin wajib password lama yang benar', function () {
 
     expect(Hash::check('rahasia123', $admin->fresh()->password))->toBeTrue();
 });
+
+test('statistik presensi bisa dilihat per bulan dan per tahun', function () {
+    $admin = adminDashUji();
+
+    $this->actingAs($admin, 'admin')
+        ->get('/admin/dashboard?periode=bulanan')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('periode', 'bulanan')
+            ->has('trenPresensi', now('Asia/Jakarta')->daysInMonth));
+
+    $this->actingAs($admin, 'admin')
+        ->get('/admin/dashboard?periode=tahunan')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('periode', 'tahunan')
+            ->has('trenPresensi', 12));
+
+    // Nilai periode tidak dikenal jatuh kembali ke mingguan (7 hari)
+    $this->actingAs($admin, 'admin')
+        ->get('/admin/dashboard?periode=ngawur')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('periode', 'mingguan')
+            ->has('trenPresensi', 7));
+});
