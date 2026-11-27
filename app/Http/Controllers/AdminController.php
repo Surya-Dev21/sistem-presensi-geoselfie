@@ -117,21 +117,32 @@ class AdminController extends Controller
     public function pegawaiIndex(Request $request)
     {
         $cari = $request->input('cari');
+        $jk   = $request->input('jk');
+        $sort = $request->input('sort', 'asc');
 
         $daftarPegawai = Pegawai::query()
             ->when($cari, function ($q, $cari) {
-                $q->where('nama_lengkap', 'like', "%{$cari}%")
-                  ->orWhere('nip', 'like', "%{$cari}%")
-                  ->orWhere('email', 'like', "%{$cari}%")
-                  ->orWhere('jabatan', 'like', "%{$cari}%");
+                $q->where(function ($sub) use ($cari) {
+                    $sub->where('nama_lengkap', 'like', "%{$cari}%")
+                        ->orWhere('nip', 'like', "%{$cari}%")
+                        ->orWhere('email', 'like', "%{$cari}%")
+                        ->orWhere('jabatan', 'like', "%{$cari}%");
+                });
             })
-            ->latest('created_at')
+            ->when($jk, function ($q, $jk) {
+                $q->where('jenis_kelamin', $jk);
+            })
+            ->orderBy('nama_lengkap', $sort === 'desc' ? 'desc' : 'asc')
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Admin/Pegawai', [
             'daftarPegawai' => $daftarPegawai,
-            'filter'        => ['cari' => $cari],
+            'filter'        => [
+                'cari' => $cari ?? '',
+                'jk'   => $jk ?? '',
+                'sort' => $sort,
+            ],
         ]);
     }
 

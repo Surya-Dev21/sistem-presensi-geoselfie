@@ -44,20 +44,45 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
     };
 
     const [isMobile, setIsMobile] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("admin_sidebar_open");
+            if (saved !== null) {
+                return JSON.parse(saved);
+            }
+            return window.innerWidth >= 1024;
+        }
+        return true;
+    });
     const [notifOpen, setNotifOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+
+    const toggleSidebar = () => {
+        setSidebarOpen((prev) => {
+            const nextState = !prev;
+            if (typeof window !== "undefined") {
+                localStorage.setItem("admin_sidebar_open", JSON.stringify(nextState));
+            }
+            return nextState;
+        });
+    };
+
+    const closeSidebar = () => {
+        setSidebarOpen(false);
+        if (typeof window !== "undefined") {
+            localStorage.setItem("admin_sidebar_open", "false");
+        }
+    };
 
     // Sinkronkan perilaku sidebar dengan ukuran layar
     useEffect(() => {
         const mq = window.matchMedia("(max-width: 1023px)");
-        const sync = () => {
+        const handleResize = () => {
             setIsMobile(mq.matches);
-            setSidebarOpen(!mq.matches);
         };
-        sync();
-        mq.addEventListener("change", sync);
-        return () => mq.removeEventListener("change", sync);
+        handleResize();
+        mq.addEventListener("change", handleResize);
+        return () => mq.removeEventListener("change", handleResize);
     }, []);
 
     const nama = auth?.user?.nama || auth?.user?.name || auth?.user?.email || "Admin";
@@ -98,7 +123,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
             {isMobile && sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={closeSidebar}
                     aria-hidden="true"
                 />
             )}
@@ -132,7 +157,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                     </Link>
                     <button
                         type="button"
-                        onClick={() => setSidebarOpen(false)}
+                        onClick={closeSidebar}
                         className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 transition text-blue-100 hover:text-white"
                         aria-label="Tutup menu"
                     >
@@ -149,7 +174,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                             key={href}
                             href={href}
                             onClick={() => {
-                                if (isMobile) setSidebarOpen(false);
+                                if (isMobile) closeSidebar();
                             }}
                             className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold transition ${
                                 active
@@ -170,7 +195,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                     {/* Hamburger: mobile + desktop */}
                     <button
                         type="button"
-                        onClick={() => setSidebarOpen((v) => !v)}
+                        onClick={toggleSidebar}
                         className="p-2 rounded-lg text-slate-600 hover:bg-blue-50 hover:text-blue-800 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white transition-colors flex-shrink-0"
                         aria-label={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
                         title={sidebarOpen ? "Tutup sidebar" : "Buka sidebar"}
