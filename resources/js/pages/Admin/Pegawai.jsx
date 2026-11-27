@@ -295,8 +295,8 @@ export default function PegawaiIndex({ daftarPegawai, filter = {} }) {
                         <table className="w-full text-left border-collapse text-sm">
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                                    <th className="py-3 px-4">NIP</th>
                                     <th className="py-3 px-4">Nama Lengkap</th>
+                                    <th className="py-3 px-4">NIP</th>
                                     <th className="py-3 px-4">Jabatan</th>
                                     <th className="py-3 px-4">Kontak</th>
                                     <th className="py-3 px-4">Jenis Kelamin</th>
@@ -310,11 +310,11 @@ export default function PegawaiIndex({ daftarPegawai, filter = {} }) {
                                             key={p.nip}
                                             className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
                                         >
-                                            <td className="py-3.5 px-4 font-mono text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                                                {p.nip}
-                                            </td>
                                             <td className="py-3.5 px-4 font-semibold text-slate-800 dark:text-white">
                                                 {p.nama_lengkap}
+                                            </td>
+                                            <td className="py-3.5 px-4 font-mono text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                                {p.nip}
                                             </td>
                                             <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
                                                 {p.jabatan || "-"}
