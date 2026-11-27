@@ -201,8 +201,7 @@ test('admin dapat mengubah jadwal pelajaran', function () {
     expect(substr($jadwal->jam_mulai, 0, 5))->toBe('09:00');
 });
 
-test('statistik presensi bisa dilihat per bulan dan per tahun', function () {
-    $admin = adminDashUji();
+test('statistik presensi bisa dilihat per bulan dan per tahun', function () {    $admin = adminDashUji();
 
     $this->actingAs($admin, 'admin')
         ->get('/admin/dashboard?periode=bulanan')
@@ -225,4 +224,44 @@ test('statistik presensi bisa dilihat per bulan dan per tahun', function () {
         ->assertInertia(fn ($page) => $page
             ->where('periode', 'mingguan')
             ->has('trenPresensi', 7));
+});
+
+test('daftar guru bisa difilter jenis kelamin dan diurutkan nama', function () {
+    $admin = adminDashUji();
+
+    foreach ([
+        ['199001010000000001', 'Budi Santoso', 'L'],
+        ['199001010000000002', 'Ani Lestari', 'P'],
+        ['199001010000000003', 'Citra Dewi', 'P'],
+    ] as [$nip, $nama, $jk]) {
+        Pegawai::create([
+            'nip' => $nip,
+            'nama_lengkap' => $nama,
+            'jabatan' => 'Guru Mapel',
+            'jenis_kelamin' => $jk,
+            'no_hp' => '081200000000',
+            'email' => "{$nip}@example.test",
+            'password' => bcrypt('password'),
+        ]);
+    }
+
+    // Default: semua guru, urut nama A-Z
+    $this->actingAs($admin, 'admin')
+        ->get('/admin/pegawai')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('Admin/Pegawai')
+            ->where('filter.sort', 'asc')
+            ->where('daftarPegawai.data.0.nama_lengkap', 'Ani Lestari'));
+
+    // Filter perempuan + urut Z-A
+    $this->actingAs($admin, 'admin')
+        ->get('/admin/pegawai?jk=P&sort=desc')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('filter.jk', 'P')
+            ->where('filter.sort', 'desc')
+            ->has('daftarPegawai.data', 2)
+            ->where('daftarPegawai.data.0.nama_lengkap', 'Citra Dewi')
+            ->where('daftarPegawai.data.1.nama_lengkap', 'Ani Lestari'));
 });
