@@ -298,7 +298,8 @@ export default function PegawaiIndex({ daftarPegawai, filter = {} }) {
                                     <th className="py-3 px-4">Nama Lengkap</th>
                                     <th className="py-3 px-4">NIP</th>
                                     <th className="py-3 px-4">Jabatan</th>
-                                    <th className="py-3 px-4">Kontak</th>
+                                    <th className="py-3 px-4">Email</th>
+                                    <th className="py-3 px-4">No. Telepon</th>
                                     <th className="py-3 px-4">Jenis Kelamin</th>
                                     <th className="py-3 px-4 text-right">Aksi</th>
                                 </tr>
@@ -319,11 +320,11 @@ export default function PegawaiIndex({ daftarPegawai, filter = {} }) {
                                             <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
                                                 {p.jabatan || "-"}
                                             </td>
-                                            <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
-                                                <span className="block">{p.email || "-"}</span>
-                                                <span className="block text-xs text-slate-400 font-mono mt-0.5">
-                                                    {p.no_hp || "-"}
-                                                </span>
+                                            <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 break-all">
+                                                {p.email || "-"}
+                                            </td>
+                                            <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-mono text-xs whitespace-nowrap">
+                                                {p.no_hp || "-"}
                                             </td>
                                             <td className="py-3.5 px-4">
                                                 <JenisKelaminBadge nilai={p.jenis_kelamin} />
@@ -354,7 +355,7 @@ export default function PegawaiIndex({ daftarPegawai, filter = {} }) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={6} className="py-12 text-center text-sm text-slate-400">
+                                        <td colSpan={7} className="py-12 text-center text-sm text-slate-400">
                                             Belum ada data guru yang ditemukan.
                                         </td>
                                     </tr>
