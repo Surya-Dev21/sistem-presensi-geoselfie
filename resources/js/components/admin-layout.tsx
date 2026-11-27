@@ -36,9 +36,9 @@ type NotifikasiAdmin = {
 };
 
 export default function AdminLayout({ children, title }: AdminLayoutProps) {
-    const { auth, url, notifikasiAdmin, jumlahIzinPending } = usePage().props as {
+    const page = usePage();
+    const { auth, notifikasiAdmin, jumlahIzinPending } = page.props as {
         auth?: { user?: { nama?: string; name?: string; email?: string } };
-        url?: string;
         notifikasiAdmin?: NotifikasiAdmin[];
         jumlahIzinPending?: number;
     };
@@ -68,7 +68,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
             .slice(0, 2)
             .map((kata) => kata[0]?.toUpperCase())
             .join("") || "A";
-    const path = url ?? "/admin/dashboard";
+    const path = page.url ?? "/admin/dashboard";
     const notifCount = jumlahIzinPending ?? 0;
     const daftarNotif = notifikasiAdmin ?? [];
 
